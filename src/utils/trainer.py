@@ -10,7 +10,7 @@ import torchmetrics
 import torchmetrics.image
 from visualizer import main_vis
 from utils.soap_optimizer import SOAP
-from utils.model.archs.ZSN2N import train_n2n
+from utils.model.archs.ZSN2N import train_n2n, N2NNetwork
 from utils.loss import ContrastiveLoss
 
 
@@ -39,7 +39,11 @@ def train_model(
 
     # Train N2N model
     print("Training N2N model...")
-    n2n_model = train_n2n(n2n_epochs, train_loader, device)
+    # Initialize model
+    model = N2NNetwork()
+    
+    n2n_model = train_n2n(epochs=1000, model=model, dataloader=dataloader)  
+
     n2n_model.eval()  # Set N2N model to evaluation mode
 
     # Initialize main model
