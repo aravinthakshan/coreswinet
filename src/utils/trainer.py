@@ -13,7 +13,7 @@ from utils.soap_optimizer import SOAP
 from utils.model.archs.ZSN2N import N2NNetwork, train_n2n
 
 
-def train(
+def train_model(
     epochs,
     batch_size,
     dataset_name,
@@ -36,7 +36,7 @@ def train(
 
     print("Training N2N model...")
     n2n_model = train_n2n(n2n_epochs, train_loader, device)
-    n2n_model.eval()  # Set to eval mode as we'll use it for inference only
+    n2n_model.eval() # in eval
 
     # Initialize main model and move to device
     model = Model(in_channels=3, contrastive=True).to(device)
@@ -107,7 +107,7 @@ def train(
                 contrastive_loss = calculate_contrastive_loss(f1, f2)
                 
                 # Combined loss
-                loss = mse_loss + 0.1 * contrastive_loss
+                loss = mse_loss + 0.5 * contrastive_loss
                 
                 loss.backward()
                 optimizer.step()
@@ -178,46 +178,44 @@ def train(
             if wandb_debug:
                 wandb.log(logger)
 
-def test(test_dir, model_path, device='cuda'):
-    """Test the model on a test dataset"""
-    # Load test dataset
-    test_dataset = CBSD68Dataset(root_dir=test_dir, noise_level=25, crop_size=256, num_crops=1, normalize=True)
-    test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
+# def test(test_dir, model_path, device='cuda'):
+#     """Test the model on a test dataset"""
+#     test_dataset = CBSD68Dataset(root_dir=test_dir, noise_level=25, crop_size=256, num_crops=1, normalize=True)
+#     test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
     
-    # Initialize models and load weights
-    main_model = Model(in_channels=3, contrastive=False).to(device)
-    n2n_model = N2NNetwork().to(device)
+#     main_model = Model(in_channels=3, contrastive=False).to(device)
+#     n2n_model = N2NNetwork().to(device)
     
-    # Load saved weights
-    checkpoint = torch.load(model_path)
-    main_model.load_state_dict(checkpoint['main_model'])
-    n2n_model.load_state_dict(checkpoint['n2n_model'])
+#     # Load saved weights
+#     checkpoint = torch.load(model_path)
+#     main_model.load_state_dict(checkpoint['main_model'])
+#     n2n_model.load_state_dict(checkpoint['n2n_model'])
     
-    main_model.eval()
-    n2n_model.eval()
+#     main_model.eval()
+#     n2n_model.eval()
     
-    # Initialize metrics
-    p = torchmetrics.image.PeakSignalNoiseRatio().to(device)
-    z = torchmetrics.image.StructuralSimilarityIndexMeasure().to(device)
+#     # Initialize metrics
+#     p = torchmetrics.image.PeakSignalNoiseRatio().to(device)
+#     z = torchmetrics.image.StructuralSimilarityIndexMeasure().to(device)
     
-    total_psnr = 0
-    total_ssim = 0
+#     total_psnr = 0
+#     total_ssim = 0
     
-    with torch.no_grad():
-        for batch_data in tqdm(test_loader, desc="Testing Progress"):
-            noise, clean = [x.to(device) for x in batch_data]
-            n2n_output = n2n_model.denoise(noise)
-            output, _, _ = main_model(noise, n2n_output)
+#     with torch.no_grad():
+#         for batch_data in tqdm(test_loader, desc="Testing Progress"):
+#             noise, clean = [x.to(device) for x in batch_data]
+#             n2n_output = n2n_model.denoise(noise)
+#             output, _, _ = main_model(noise, n2n_output)
             
-            psnr_val, ssim_val = get_metrics(clean, output, p, z)
-            total_psnr += psnr_val
-            total_ssim += ssim_val
+#             psnr_val, ssim_val = get_metrics(clean, output, p, z)
+#             total_psnr += psnr_val
+#             total_ssim += ssim_val
     
-    avg_psnr = total_psnr / len(test_loader)
-    avg_ssim = total_ssim / len(test_loader)
+#     avg_psnr = total_psnr / len(test_loader)
+#     avg_ssim = total_ssim / len(test_loader)
     
-    print(f"Test Results:")
-    print(f"Average PSNR: {avg_psnr:.4f}")
-    print(f"Average SSIM: {avg_ssim:.4f}")
+#     print(f"Test Results:")
+#     print(f"Average PSNR: {avg_psnr:.4f}")
+#     print(f"Average SSIM: {avg_ssim:.4f}")
     
-    return avg_psnr, avg_ssim
+#     return avg_psnr, avg_ssim
