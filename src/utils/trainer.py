@@ -42,7 +42,8 @@ def train_model(
     # Initialize model
     model = N2NNetwork()
     
-    n2n_model = train_n2n(epochs=1000, model=model, dataloader=train_loader)  
+    n2n_model = train_n2n(epochs=3000, model=model, dataloader=train_loader)
+
 
     n2n_model.eval()  # Set N2N model to evaluation mode
 
