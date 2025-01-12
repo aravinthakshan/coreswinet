@@ -1,4 +1,3 @@
 # Ignore Python cache files
 pycache/
-
 src/coregan/model/archs/corefusion

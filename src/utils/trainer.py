@@ -13,17 +13,6 @@ from utils.soap_optimizer import SOAP
 from utils.model.archs.ZSN2N import N2NNetwork, train_n2n
 from utils.loss import ContrastiveLoss
 
-import wandb
-from torch.utils.data import DataLoader
-from utils.misc import get_metrics
-from utils.model.plsworkmodel import Model
-from utils.dataloader import CBSD68Dataset
-from tqdm import tqdm
-import torch
-import torch.nn as nn
-import torchmetrics
-from utils.soap_optimizer import SOAP
-from utils.model.archs.ZSN2N import N2NNetwork, train_n2n
 
 def train_model(
     epochs,
@@ -34,7 +23,8 @@ def train_model(
     wandb_debug,
     device='cuda',
     lr=3e-3,
-    n2n_epochs=100
+    n2n_epochs=100,
+    contrastive_temperature=0.5
 ):
     # Dataset and dataloaders
     dataset = CBSD68Dataset(root_dir=train_dir, noise_level=25, crop_size=256, num_crops=34, normalize=True)
@@ -68,6 +58,7 @@ def train_model(
     
     # Loss functions
     mse_criterion = nn.MSELoss()
+    contrastive_loss_fn = ContrastiveLoss(batch_size=batch_size, temperature=contrastive_temperature)
     
     # Metrics
     psnr_metric = torchmetrics.image.PeakSignalNoiseRatio().to(device)
@@ -87,13 +78,6 @@ def train_model(
         'max_psnr': 0,
         'max_ssim': 0,
     }
-    
-    def calculate_contrastive_loss(f1, f2, temperature=0.07):
-        f1 = nn.functional.normalize(f1, dim=1)
-        f2 = nn.functional.normalize(f2, dim=1)
-        logits = torch.mm(f1, f2.t()) / temperature
-        labels = torch.arange(logits.shape[0], device=device)
-        return nn.CrossEntropyLoss()(logits, labels)
     
     # Training loop
     for epoch in range(epochs):
@@ -119,10 +103,10 @@ def train_model(
                 
                 # Calculate losses
                 mse_loss = mse_criterion(output, clean)
-                contrastive_loss = calculate_contrastive_loss(f1, f2)
+                contrastive_loss = contrastive_loss_fn(f1, f2)
                 
                 # Combined loss
-                loss = mse_loss + 0.5 * contrastive_loss
+                loss = mse_loss + contrastive_loss
                 
                 loss.backward()
                 optimizer.step()
@@ -192,7 +176,6 @@ def train_model(
             
             if wandb_debug:
                 wandb.log(logger)
-
 
 # def test(test_dir, model_path, device='cuda'):
 #     """Test the model on a test dataset"""
