@@ -58,14 +58,13 @@ def get_training_augmentation():
 
 
 class CBSD68Dataset(Dataset):
-    def __init__(self, root_dir, noise_level=25, crop_size=256, num_crops=32, normalize=True, tanfi=True, augmentation=get_training_augmentation()):
+    def __init__(self, root_dir, noise_level=25, crop_size=256, num_crops=32, normalize=True, tanfi=True):
         self.root_dir = root_dir
         self.noise_level = f"noisy{noise_level}"
         self.crop_size = crop_size
         self.num_crops = num_crops
         self.normalize = normalize
         self.tanfi = tanfi
-        self.augmentation = augmentation
 
         self.original_dir = os.path.join(root_dir, "original_png")
         self.noisy_dir = os.path.join(root_dir, self.noise_level)
@@ -108,14 +107,9 @@ class CBSD68Dataset(Dataset):
         return len(self.image_pairs)
 
     def __getitem__(self, idx):
-        input_image, label_image = self.image_pairs[idx]
+        noisy, clean = self.image_pairs[idx]
+        return noisy, clean
 
-        if callable(self.augmentation):
-            augmented = self.augmentation(image1=label_image.numpy(), image=input_image.numpy())
-            label_image = torch.tensor(augmented['image1'], dtype=torch.float32)
-            input_image = torch.tensor(augmented['image'], dtype=torch.float32)
-
-        return input_image, label_image
 
     def visualize(self, idx):
         import matplotlib.pyplot as plt

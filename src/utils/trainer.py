@@ -11,7 +11,19 @@ import torchmetrics.image
 from visualizer import main_vis
 from utils.soap_optimizer import SOAP
 from utils.model.archs.ZSN2N import N2NNetwork, train_n2n
+from utils.loss import ContrastiveLoss
 
+import wandb
+from torch.utils.data import DataLoader
+from utils.misc import get_metrics
+from utils.model.plsworkmodel import Model
+from utils.dataloader import CBSD68Dataset
+from tqdm import tqdm
+import torch
+import torch.nn as nn
+import torchmetrics
+from utils.soap_optimizer import SOAP
+from utils.model.archs.ZSN2N import N2NNetwork, train_n2n
 
 def train_model(
     epochs,
@@ -24,6 +36,7 @@ def train_model(
     lr=3e-3,
     n2n_epochs=100
 ):
+    # Dataset and dataloaders
     dataset = CBSD68Dataset(root_dir=train_dir, noise_level=25, crop_size=256, num_crops=34, normalize=True)
     train_size = int(0.8 * len(dataset))
     test_size = len(dataset) - train_size
@@ -34,14 +47,15 @@ def train_model(
     
     print(f"Images per epoch: {len(train_loader) * train_loader.batch_size}")
 
+    # Train N2N model
     print("Training N2N model...")
     n2n_model = train_n2n(n2n_epochs, train_loader, device)
-    n2n_model.eval() # in eval
+    n2n_model.eval()  # Set N2N model to evaluation mode
 
-    # Initialize main model and move to device
+    # Initialize main model
     model = Model(in_channels=3, contrastive=True).to(device)
     
-    # Initialize optimizer
+    # Optimizer
     optimizer = SOAP(
         model.parameters(),
         lr=lr,
@@ -52,14 +66,14 @@ def train_model(
         normalize_grads=True
     )
     
-    # Initialize losses
+    # Loss functions
     mse_criterion = nn.MSELoss()
     
-    # Initialize metrics
-    p = torchmetrics.image.PeakSignalNoiseRatio().to(device)
-    z = torchmetrics.image.StructuralSimilarityIndexMeasure().to(device)
+    # Metrics
+    psnr_metric = torchmetrics.image.PeakSignalNoiseRatio().to(device)
+    ssim_metric = torchmetrics.image.StructuralSimilarityIndexMeasure().to(device)
     
-    # Training tracking
+    # Logger and tracking
     max_ssim = 0
     max_psnr = 0
     logger = {
@@ -81,15 +95,16 @@ def train_model(
         labels = torch.arange(logits.shape[0], device=device)
         return nn.CrossEntropyLoss()(logits, labels)
     
+    # Training loop
     for epoch in range(epochs):
         model.train()
         total_loss = []
         psnr_train, ssim_train = 0, 0
         
-        p.reset()
-        z.reset()
+        psnr_metric.reset()
+        ssim_metric.reset()
         
-        with tqdm(train_loader, desc="Training Progress") as loader:
+        with tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs} - Training Progress") as loader:
             for itr, batch_data in enumerate(loader):
                 noise, clean = [x.to(device) for x in batch_data]
                 
@@ -113,7 +128,7 @@ def train_model(
                 optimizer.step()
                 
                 # Calculate metrics
-                psnr_train_itr, ssim_train_itr = get_metrics(clean, output, p, z, Standardize=True)
+                psnr_train_itr, ssim_train_itr = get_metrics(clean, output, psnr_metric, ssim_metric)
                 
                 total_loss.append(loss.item())
                 psnr_train += psnr_train_itr
@@ -131,24 +146,24 @@ def train_model(
             logger['train_psnr'] = psnr_train
             logger['train_ssim'] = ssim_train
             
-            print(f'Epoch {epoch + 1}/{epochs}')
+            print(f'\nEpoch {epoch + 1}/{epochs}')
             print(f'TRAIN Loss: {avg_loss:.4f}')
             print(f'TRAIN PSNR: {psnr_train:.4f}')
             print(f'TRAIN SSIM: {ssim_train:.4f}')
             
-            p.reset()
-            z.reset()
+            psnr_metric.reset()
+            ssim_metric.reset()
         
-        # Validation
+        # Validation loop
         model.eval()
-        with tqdm(val_loader, desc="Val Progress") as loader:
+        with tqdm(val_loader, desc="Validation Progress") as loader:
             psnr_val, ssim_val = 0, 0
             with torch.no_grad():
                 for batch_data in loader:
                     noise, clean = [x.to(device) for x in batch_data]
                     n2n_output = n2n_model.denoise(noise)
                     output, _, _ = model(noise, n2n_output)
-                    psnr_val_itr, ssim_val_itr = get_metrics(clean, output, p, z)
+                    psnr_val_itr, ssim_val_itr = get_metrics(clean, output, psnr_metric, ssim_metric)
                     psnr_val += psnr_val_itr
                     ssim_val += ssim_val_itr
             
@@ -172,11 +187,12 @@ def train_model(
                 }, './best_models.pth')
                 print(f"Saved Models at epoch {epoch}.")
                 
-            print("Val PSNR:", psnr_val)
-            print("Val SSIM:", ssim_val)
+            print(f"\nVal PSNR: {psnr_val:.4f}")
+            print(f"Val SSIM: {ssim_val:.4f}")
             
             if wandb_debug:
                 wandb.log(logger)
+
 
 # def test(test_dir, model_path, device='cuda'):
 #     """Test the model on a test dataset"""
