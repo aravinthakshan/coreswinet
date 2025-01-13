@@ -12,23 +12,43 @@ import numpy as np
 from PIL import Image
 import torchvision.transforms as transforms
 
+import os
+import torch
+import torch.nn.functional as F
+import numpy as np
+from PIL import Image
+import torchvision.transforms as transforms
+
 def test(model, noisy_img, clean_img, save_dir="predictions/"):
     with torch.no_grad():
+        # Prediction calculation
         pred = torch.clamp(noisy_img - model(noisy_img), 0, 1)
         
+        # Calculate PSNR
         mse = F.mse_loss(clean_img, pred).item()
         psnr = 10 * np.log10(1 / mse)
         
+    # Print range of prediction
     min_value = pred.min().item()
     max_value = pred.max().item()
     print(f"Range of values in pred_img: min={min_value}, max={max_value}")
     
-    pred_img = pred.squeeze(0).cpu() 
-    pred_img = transforms.ToPILImage()(pred_img)  
+    # Remove batch dimension if present and ensure the correct format (C x H x W)
+    pred_img = pred.squeeze(0)  # Remove the batch dimension (if batch size is 1)
     
+    # If it's a 3D tensor (C x H x W), convert to PIL Image
+    if pred_img.ndimension() == 3:  # RGB or multi-channel image
+        pred_img = pred_img.permute(1, 2, 0)  # Convert to H x W x C for PIL
+    elif pred_img.ndimension() == 2:  # Grayscale image
+        pred_img = pred_img.unsqueeze(0)  # Add channel dimension for grayscale (H x W -> 1 x H x W)
+    
+    pred_img = transforms.ToPILImage()(pred_img.cpu())  # Convert to PIL Image
+    
+    # Ensure the save directory exists
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     
+    # Define the file path and save the image
     image_path = f"{save_dir}/predicted_image.png"
     pred_img.save(image_path)
     print(f"Saved predicted image to {image_path}")
