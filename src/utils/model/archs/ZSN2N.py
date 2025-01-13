@@ -11,6 +11,9 @@ def test(model, noisy_img, clean_img):
         pred = torch.clamp(noisy_img - model(noisy_img), 0, 1)
         mse = F.mse_loss(clean_img, pred).item()
         psnr = 10 * np.log10(1/mse)
+    min_value = pred.min().item()
+    max_value = pred.max().item()
+    print(f"Range of values in noisy_img: min={min_value}, max={max_value}")
     return psnr
 
 def un_tan_fi(data):
@@ -76,6 +79,7 @@ def train_n2n(
             psnr = test(model, noisy_img, clean_img)
             tqdm.write(f"Epoch {epoch}, PSNR: {psnr:.2f}")
             tqdm.desc = f"Training Progress - Epoch {epoch}, PSNR: {psnr:.2f}"
+
 
     return model
 
