@@ -98,8 +98,8 @@ def train(
                 optimizer.zero_grad()
                 # if not threshold_reached:
                 #     # Get N2N denoised output
-                #     with torch.no_grad():
-                n2n_output = n2n_model.denoise(noise)
+                with torch.no_grad():
+                    n2n_output = n2n_model.denoise(noise)
                 # else:
                 #     # Skip N2N model and use noisy image directly
                 #     n2n_output = noise
@@ -204,8 +204,9 @@ def train(
             print(f"PSNR threshold ({psnr_threshold}) exceeded at epoch {epoch + 1}.")
             print("Switching to MSE-only loss.")
             threshold_reached = True
-
-    main_vis(val_dir)
+            
+        if epoch%1 == 0:
+            main_vis(val_dir)
     # # Training loop
     # for epoch in range(epochs):
     #     model.train()
