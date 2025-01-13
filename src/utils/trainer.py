@@ -39,17 +39,17 @@ def train(
     
     print(f"Images per epoch: {len(train_loader) * train_loader.batch_size}")
 
-    # Train N2N model
-    print("Training N2N model...")
-    # Initialize model
-    model= N2NNetwork()  ### N2N
+    # # Train N2N model
+    # print("Training N2N model...")
+    # # Initialize model
+    # model= N2NNetwork()  ### N2N
     
     
-    n2n_model, psnr_threshold  = train_n2n(epochs=n2n_epochs, model=model, dataloader=train_loader)
+    # n2n_model, psnr_threshold  = train_n2n(epochs=n2n_epochs, model=model, dataloader=train_loader)
 
-    print("PSNR: THRESHOLD",psnr_threshold)
+    # print("PSNR: THRESHOLD",psnr_threshold)
 
-    n2n_model.eval()  # Set N2N model to evaluation mode
+    # n2n_model.eval()  # Set N2N model to evaluation mode
 
     # Initialize main model
     model = Model(in_channels=3, contrastive=True).to(device)
