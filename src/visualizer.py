@@ -81,7 +81,7 @@ def get_statistics(noise, clean, output, idx, wb=True):
         wandb.log({"examples": examples})
         print(f"Images for index {idx} saved in wandb")
     
-    return stats
+
 
 def main_vis(val_dir, model_path="./best_models.pth", use_wandb=True, noise_level=25, crop_size=256, num_crops=32):
     """Main visualization function."""
@@ -129,7 +129,7 @@ def main_vis(val_dir, model_path="./best_models.pth", use_wandb=True, noise_leve
         print(f"\nImage {i} - Main Model: PSNR: {psnr_main:.4f}, SSIM: {ssim_main:.4f}")
         
         stats_main = get_statistics(noise[0], clean[0], output_main[0], i, wb=use_wandb)
-        stats_n2n = get_statistics(noise[0], clean[0], output_n2n[0], i, wb=use_wandb)
+        # stats_n2n = get_statistics(noise[0], clean[0], output_n2n[0], i, wb=use_wandb)
         
         all_stats.append({
             "main_model": stats_main,
