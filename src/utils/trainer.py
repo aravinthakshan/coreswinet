@@ -41,11 +41,12 @@ def train(
     # Train N2N model
     print("Training N2N model...")
     # Initialize model
-    model, psnr_threshold = N2NNetwork()  ### N2N
+    model= N2NNetwork()  ### N2N
     
+    
+    n2n_model, psnr_threshold  = train_n2n(epochs=n2n_epochs, model=model, dataloader=train_loader)
+
     print("PSNR: THRESHOLD",psnr_threshold)
-    
-    n2n_model = train_n2n(epochs=n2n_epochs, model=model, dataloader=train_loader)
 
     n2n_model.eval()  # Set N2N model to evaluation mode
 
@@ -66,7 +67,7 @@ def train(
     # Loss functions
     mse_criterion = nn.MSELoss()
     contrastive_loss_fn = ContrastiveLoss(batch_size=batch_size, temperature=contrastive_temperature)
-    texture_loss_fn = TextureLoss()
+    # texture_loss_fn = TextureLoss()
     
     # Metrics
     psnr_metric = torchmetrics.image.PeakSignalNoiseRatio().to(device)
@@ -118,10 +119,10 @@ def train(
                 # Calculate losses
                 mse_loss = mse_criterion(output, clean)
                 contrastive_loss = contrastive_loss_fn(f1, f2)
-                texture_LOSS = texture_loss_fn(output, clean)
+                # texture_LOSS = texture_loss_fn(output, clean)
                 
                 # Combined loss
-                loss = mse_loss + texture_LOSS + contrastive_loss 
+                loss = mse_loss + 0.01*contrastive_loss
                 
                 loss.backward()
                 optimizer.step()
@@ -201,8 +202,8 @@ def train(
         if max_psnr > psnr_threshold:
             print(f"PSNR threshold exceeded at epoch {epoch + 1}. Disabling N2N model.")
             use_n2n = False
-
-    main_vis(val_dir)
+        
+        main_vis(val_dir)
 
     # # Training loop
     # for epoch in range(epochs):
@@ -232,7 +233,7 @@ def train(
     #             texture_LOSS = texture_loss_fn(output,clean)
                 
     #             # Combined loss
-    #             loss = mse_loss + texture_LOSS + contrastive_loss 
+    #             loss = mse_loss + 0.001* contrastive_loss
                 
     #             loss.backward()
     #             optimizer.step()
@@ -304,7 +305,6 @@ def train(
     #             wandb.log(logger)
                 
     # main_vis(val_dir)
-
 
 def train_model(config):
     train(
