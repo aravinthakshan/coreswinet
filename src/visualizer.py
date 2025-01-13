@@ -6,21 +6,31 @@ import torchmetrics.image
 from utils.dataloader import CBSD68Dataset 
 from torch.utils.data import DataLoader
 from utils.model.plsworkmodel import Model  
+from utils.model.archs.ZSN2N import N2NNetwork
 
-def load_model(model_path, device):
-
-    model = Model()
-    state_dict = torch.load(model_path, map_location=device)
-    model_dict = model.state_dict()
+def load_models(model_path, device):
+    """Loads the main model and n2n model from a checkpoint."""
+    checkpoint = torch.load(model_path, map_location=device)
     
-    # Selective loading of weights
-    pretrained_dict = {k: v for k, v in state_dict.items() 
-                       if k in model_dict and v.shape == model_dict[k].shape}
-    model_dict.update(pretrained_dict)
-    model.load_state_dict(model_dict, strict=False)
+    main_model = Model()  
+    main_model_dict = main_model.state_dict()
     
-    print(f"Loaded {len(pretrained_dict)} / {len(state_dict)} layers")
-    return model
+    main_pretrained_dict = {k: v for k, v in checkpoint['main_model'].items()
+                            if k in main_model_dict and v.shape == main_model_dict[k].shape}
+    main_model_dict.update(main_pretrained_dict)
+    main_model.load_state_dict(main_model_dict, strict=False)
+    print(f"Loaded {len(main_pretrained_dict)} / {len(main_model_dict)} layers into main model")
+    
+    n2n_model = N2NNetwork() 
+    n2n_model_dict = n2n_model.state_dict()
+    
+    n2n_pretrained_dict = {k: v for k, v in checkpoint['n2n_model'].items()
+                           if k in n2n_model_dict and v.shape == n2n_model_dict[k].shape}
+    n2n_model_dict.update(n2n_pretrained_dict)
+    n2n_model.load_state_dict(n2n_model_dict, strict=False)
+    print(f"Loaded {len(n2n_pretrained_dict)} / {len(n2n_model_dict)} layers into n2n model")
+    
+    return main_model, n2n_model
 
 def un_tan_fi(data):
 
@@ -62,7 +72,6 @@ def get_statistics(noise, clean, output, idx, wb=True):
             print(f"{key.capitalize()}: {value:.4f}")
         
         if wb:
-            # Convert to uint8 for visualization
             np_data = np.clip(np_data.transpose(1, 2, 0), 0, 1) * 255
             rgb_data = np_data.astype(np.uint8)
             image = wandb.Image(rgb_data, caption=f"{suffix}_{idx}.png")
@@ -74,10 +83,8 @@ def get_statistics(noise, clean, output, idx, wb=True):
     
     return stats
 
-def main_vis(val_dir, model_path="./best_model.pth", use_wandb=True, 
-             noise_level=25, crop_size=256, num_crops=32):
-
-    # Setup device and wandb if needed
+def main_vis(val_dir, model_path="./best_models.pth", use_wandb=True, noise_level=25, crop_size=256, num_crops=32):
+    """Main visualization function."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
     
@@ -88,9 +95,9 @@ def main_vis(val_dir, model_path="./best_model.pth", use_wandb=True,
             "num_crops": num_crops
         })
     
-    model = load_model(model_path, device)
-    model.to(device)
-    model.eval()
+    main_model, n2n_model = load_models(model_path, device)
+    main_model.to(device).eval()
+    n2n_model.to(device).eval()
     
     dataset = CBSD68Dataset(
         root_dir=val_dir, 
@@ -105,7 +112,7 @@ def main_vis(val_dir, model_path="./best_model.pth", use_wandb=True,
     psnr_metric = torchmetrics.image.PeakSignalNoiseRatio().to(device)
     ssim_metric = torchmetrics.image.StructuralSimilarityIndexMeasure().to(device)
     
-    selected_indices = [10, 12] ## change this back
+    selected_indices = [10, 20]  
     
     all_stats = []
     for i, (noise, clean) in enumerate(dataloader):
@@ -115,13 +122,19 @@ def main_vis(val_dir, model_path="./best_model.pth", use_wandb=True,
         noise, clean = noise.to(device), clean.to(device)
         
         with torch.no_grad():
-            output = model(noise)
+            output_n2n = n2n_model(noise)
+            output_main = main_model(noise, output_n2n)
         
-        psnr, ssim = get_metrics(clean, output, psnr_metric, ssim_metric)
-        print(f"\nImage {i}: PSNR: {psnr:.4f}, SSIM: {ssim:.4f}")
+        psnr_main, ssim_main = get_metrics(clean, output_main, psnr_metric, ssim_metric)
+        print(f"\nImage {i} - Main Model: PSNR: {psnr_main:.4f}, SSIM: {ssim_main:.4f}")
         
-        stats = get_statistics(noise[0], clean[0], output[0], i, wb=use_wandb)
-        all_stats.append(stats)
+        stats_main = get_statistics(noise[0], clean[0], output_main[0], i, wb=use_wandb)
+        stats_n2n = get_statistics(noise[0], clean[0], output_n2n[0], i, wb=use_wandb)
+        
+        all_stats.append({
+            "main_model": stats_main,
+            "n2n_model": stats_n2n
+        })
     
     if use_wandb:
         wandb.finish()
