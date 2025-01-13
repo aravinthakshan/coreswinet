@@ -123,7 +123,7 @@ def main_vis(val_dir, model_path="./best_models.pth", use_wandb=True, noise_leve
         
         with torch.no_grad():
             output_n2n = n2n_model(noise)
-            output_main = main_model(noise, output_n2n)
+            output_main,_,_ = main_model(noise, output_n2n)
         
         psnr_main, ssim_main = get_metrics(clean, output_main, psnr_metric, ssim_metric)
         print(f"\nImage {i} - Main Model: PSNR: {psnr_main:.4f}, SSIM: {ssim_main:.4f}")
