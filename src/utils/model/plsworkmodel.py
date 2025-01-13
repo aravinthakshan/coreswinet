@@ -74,7 +74,7 @@ class Model(nn.Module):
             self.swin_blocks.append(swin_block_list)
 
         # Channel attention for bottleneck
-        self.bottleneck_attention = SimpleChannelAttention(encoder_channels[-1])
+        self.bottleneck_attention = SqueezeExcitationBlock(encoder_channels[-1])
         
         # Contrastive heads
         self.contrastive = contrastive
