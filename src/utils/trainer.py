@@ -182,10 +182,7 @@ def train_model(
                 logger['max_psnr'] = max_psnr
                 logger['best_epoch'] = epoch + 1
                 # Save both models
-                torch.save({
-                    'main_model': model.state_dict(),
-                    'n2n_model': n2n_model.state_dict()
-                }, './best_models.pth')
+                torch.save(model.state_dict(), './best_model.pth')
                 print(f"Saved Models at epoch {epoch}.")
                 
             print(f"\nVal PSNR: {psnr_val:.4f}")
