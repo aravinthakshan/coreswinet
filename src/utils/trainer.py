@@ -2,7 +2,7 @@ import wandb
 from torch.utils.data import DataLoader
 from utils.misc import get_metrics
 from utils.model.plsworkmodel import Model
-from utils.dataloader import CBSD68Dataset,BSD400
+from utils.dataloader import BSD400
 from tqdm import tqdm
 import torch
 import torch.nn as nn

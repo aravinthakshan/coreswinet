@@ -3,7 +3,7 @@ import torch
 import numpy as np
 import wandb 
 import torchmetrics.image
-from utils.dataloader import CBSD68Dataset,BSD400 
+from utils.dataloader import BSD400 
 from torch.utils.data import DataLoader
 from utils.model.plsworkmodel import Model  
 from utils.model.archs.ZSN2N import N2NNetwork
