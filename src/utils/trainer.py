@@ -189,13 +189,11 @@ def train_model(config):
     train(
         config['epochs'],
         config['batch_size'],
-        # config['dataset_name'],
         config['train_dir'],
         config['val_dir'],
         config['wandb'],
         config['device'],
         config['lr'],
-        config['int_channel']
     )
     
 # def test(test_dir, model_path, device='cuda'):
