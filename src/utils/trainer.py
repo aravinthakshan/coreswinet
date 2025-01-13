@@ -44,8 +44,8 @@ def train_model(
     test_size = len(dataset) - train_size
     train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True )
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False,drop_last=True )
     
     print(f"Images per epoch: {len(train_loader) * train_loader.batch_size}")
 
