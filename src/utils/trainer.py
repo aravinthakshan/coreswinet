@@ -206,7 +206,6 @@ def train(
 
     # main_vis(val_dir)
 
-
     def pair_downsampler(img):
         """
         Applies two downsampling filters to the input image batch.
@@ -216,7 +215,9 @@ def train(
         Returns:
             Tuple[torch.Tensor, torch.Tensor]: Downsampled outputs with the same batch size and channel dimensions.
         """
-        batch_size, c, _, _ = img.shape
+        batch_size, c, h, w = img.shape
+        print(f"Input image shape: {img.shape}")  # Debug print
+
         filter1 = torch.FloatTensor([[[[0, 0.5], [0.5, 0]]]]).to(img.device)
         filter2 = torch.FloatTensor([[[[0.5, 0], [0, 0.5]]]]).to(img.device)
         filter1 = filter1.repeat(c, 1, 1, 1)  # Repeat filters for each channel
@@ -225,6 +226,11 @@ def train(
         # Perform depthwise convolutions
         output1 = F.conv2d(img, filter1, stride=2, groups=c)
         output2 = F.conv2d(img, filter2, stride=2, groups=c)
+
+        # Debug print for output shapes after downsampling
+        print(f"Output1 shape after downsampling: {output1.shape}")
+        print(f"Output2 shape after downsampling: {output2.shape}")
+
         return output1, output2
 
     def n2n_loss_func(model, noisy_img):
@@ -237,23 +243,47 @@ def train(
         Returns:
             torch.Tensor: The computed loss value.
         """
+        print(f"Input noisy image shape: {noisy_img.shape}")  # Debug print
+
         # Downsample noisy images into two sets
         noisy1, noisy2 = pair_downsampler(noisy_img)
+
+        # Debug prints for downsampled images
+        print(f"Noisy1 shape after downsampling: {noisy1.shape}")
+        print(f"Noisy2 shape after downsampling: {noisy2.shape}")
 
         # Predict noise using the model
         pred1 = noisy1 - model(noisy1)[0]  # Assuming model returns (output, f1, f2)
         pred2 = noisy2 - model(noisy2)[0]
 
+        # Debug prints for predictions
+        print(f"Pred1 shape after model prediction: {pred1.shape}")
+        print(f"Pred2 shape after model prediction: {pred2.shape}")
+
         # Compute the residual loss
         loss_res = 0.5 * (F.mse_loss(noisy1, pred2) + F.mse_loss(noisy2, pred1))
+
+        # Debug print for residual loss
+        print(f"Residual loss: {loss_res.item()}")
 
         # Compute the consistency loss
         noisy_denoised = noisy_img - model(noisy_img)[0]
         denoised1, denoised2 = pair_downsampler(noisy_denoised)
+        
+        # Debug prints for denoised images
+        print(f"Denoised1 shape: {denoised1.shape}")
+        print(f"Denoised2 shape: {denoised2.shape}")
+
         loss_cons = 0.5 * (F.mse_loss(pred1, denoised1) + F.mse_loss(pred2, denoised2))
 
+        # Debug print for consistency loss
+        print(f"Consistency loss: {loss_cons.item()}")
+
         # Total loss
-        return loss_res + loss_cons
+        total_loss = loss_res + loss_cons
+        print(f"Total loss: {total_loss.item()}")  # Debug print
+
+        return total_loss
 
 
     # Training loop

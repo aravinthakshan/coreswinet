@@ -97,47 +97,44 @@ class SwinTransformerBlock(nn.Module):
 
         return x
 
-
     def window_partition(self, x):
         """
         Partition into windows with padding if needed
         """
         B, H, W, C = x.shape
-
+        
         # Compute padding
         pad_h = (self.window_size - H % self.window_size) % self.window_size
         pad_w = (self.window_size - W % self.window_size) % self.window_size
-
+        
         # Pad if necessary
         if pad_h > 0 or pad_w > 0:
-            x = F.pad(x, (0, 0, 0, pad_w, 0, pad_h))  # Pad along H and W dimensions
-
-        # Compute padded shape
-        H_p, W_p = x.shape[1], x.shape[2]
-
+            x = F.pad(x, (0, 0, 0, pad_w, 0, pad_h))
+            B, H, W, C = x.shape
+        
+        # Compute number of windows
+        patch_h = H // self.window_size
+        patch_w = W // self.window_size
+        
         # Partition windows
-        x = x.view(
-            B, H_p // self.window_size, self.window_size, W_p // self.window_size, self.window_size, C
-        )
+        x = x.view(B, patch_h, self.window_size, patch_w, self.window_size, C)
         windows = x.permute(0, 1, 3, 2, 4, 5).contiguous().view(-1, self.window_size, self.window_size, C)
-
-        return windows, (pad_h, pad_w, H_p, W_p)
+        
+        return windows, (pad_h, pad_w)
 
     def window_reverse(self, windows, H, W, padding):
         """
         Reverse window partitioning and remove padding
         """
-        pad_h, pad_w, H_p, W_p = padding
-        B = int(windows.shape[0] / ((H_p // self.window_size) * (W_p // self.window_size)))
-
-        # Reshape and reverse window partitioning
-        x = windows.view(
-            B, H_p // self.window_size, W_p // self.window_size, self.window_size, self.window_size, -1
-        )
-        x = x.permute(0, 1, 3, 2, 4, 5).contiguous().view(B, H_p, W_p, -1)
-
+        pad_h, pad_w = padding
+        B = int(windows.shape[0] / ((H + pad_h) / self.window_size * (W + pad_w) / self.window_size))
+        
+        x = windows.view(B, (H + pad_h) // self.window_size, (W + pad_w) // self.window_size, 
+                         self.window_size, self.window_size, -1)
+        x = x.permute(0, 1, 3, 2, 4, 5).contiguous().view(B, H + pad_h, W + pad_w, -1)
+        
         # Remove padding
         if pad_h > 0 or pad_w > 0:
             x = x[:, :H, :W, :]
-
+        
         return x
