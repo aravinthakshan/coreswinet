@@ -133,7 +133,7 @@ def main_vis(val_dir, model_path="./best_models.pth", use_wandb=True, noise_leve
         
         all_stats.append({
             "main_model": stats_main,
-            "n2n_model": stats_n2n
+            # "n2n_model": stats_n2n
         })
     
     if use_wandb:
