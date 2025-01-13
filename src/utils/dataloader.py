@@ -8,7 +8,7 @@ import torchvision.transforms.functional as TF
 import matplotlib.pyplot as plt
 import numpy as np
 import albumentations as A
-
+import matplotlib.pyplot as plt
 def tan_fi(data):
     d = data.clone()
     d *= 2
@@ -192,7 +192,7 @@ class BSD400(Dataset):
 
 
     def visualize(self, idx):
-        import matplotlib.pyplot as plt
+
 
         noisy_crop, clean_crop = self.image_pairs[idx]
 

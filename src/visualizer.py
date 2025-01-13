@@ -59,6 +59,13 @@ def get_statistics(noise, clean, output, idx, wb=True):
         if suffix != 'noisy_input':
             data = un_tan_fi(data)
         
+       
+        
+        if wb:
+            np_data = np.clip(np_data.transpose(1, 2, 0), 0, 1) * 255
+            rgb_data = np_data.astype(np.uint8)
+            image = wandb.Image(rgb_data, caption=f"{suffix}_{idx}.png")
+            examples.append(image)
         np_data = data.cpu().numpy()
         stats[suffix] = {
             'min': np_data.min(),
@@ -70,12 +77,6 @@ def get_statistics(noise, clean, output, idx, wb=True):
         print(f"\n{suffix} Statistics:")
         for key, value in stats[suffix].items():
             print(f"{key.capitalize()}: {value:.4f}")
-        
-        if wb:
-            np_data = np.clip(np_data.transpose(1, 2, 0), 0, 1) * 255
-            rgb_data = np_data.astype(np.uint8)
-            image = wandb.Image(rgb_data, caption=f"{suffix}_{idx}.png")
-            examples.append(image)
     
     if wb and examples:
         wandb.log({"examples": examples})
