@@ -22,7 +22,7 @@ def train_model(
     wandb_debug,
     device='cuda',
     lr=3e-3,
-    n2n_epochs=100,
+    n2n_epochs=1000,
     contrastive_temperature=0.5
 ):
     # Training configuration
