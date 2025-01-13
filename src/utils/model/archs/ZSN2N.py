@@ -21,30 +21,10 @@ def test(model, noisy_img, clean_img, save_dir="predictions/"):
         mse = F.mse_loss(clean_img, pred).item()
         psnr = 10 * np.log10(1 / mse)
         
-    # Print the range of values in pred
     min_value = pred.min().item()
     max_value = pred.max().item()
     print(f"Range of values in pred_img: min={min_value}, max={max_value}")
-    
-    # Convert pred to a NumPy array and print all values
-    pred_numpy = pred.cpu().numpy()  # Move tensor to CPU and convert to NumPy
-    print("All values in pred:")
-    print(pred_numpy)
 
-    return psnr
-
-    
-
-    pred_img = pred.squeeze(0).cpu() 
-    pred_img = transforms.ToPILImage()(pred_img)  
-    
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-    
-    image_path = f"{save_dir}/predicted_image.png"
-    pred_img.save(image_path)
-    print(f"Saved predicted image to {image_path}")
-    
     return psnr
 
 
