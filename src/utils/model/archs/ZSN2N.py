@@ -5,16 +5,36 @@ import torch.optim as optim
 from tqdm import tqdm
 from torchvision.transforms import functional as TF
 import numpy as np
+import os 
+import torch
+import torch.nn.functional as F
+import numpy as np
+from PIL import Image
+import torchvision.transforms as transforms
 
-def test(model, noisy_img, clean_img):
+def test(model, noisy_img, clean_img, save_dir="predictions/"):
     with torch.no_grad():
         pred = torch.clamp(noisy_img - model(noisy_img), 0, 1)
+        
         mse = F.mse_loss(clean_img, pred).item()
-        psnr = 10 * np.log10(1/mse)
+        psnr = 10 * np.log10(1 / mse)
+        
     min_value = pred.min().item()
     max_value = pred.max().item()
     print(f"Range of values in pred_img: min={min_value}, max={max_value}")
+    
+    pred_img = pred.squeeze(0).cpu() 
+    pred_img = transforms.ToPILImage()(pred_img)  
+    
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    
+    image_path = f"{save_dir}/predicted_image.png"
+    pred_img.save(image_path)
+    print(f"Saved predicted image to {image_path}")
+    
     return psnr
+
 
 def un_tan_fi(data):
     d = data.clone()
