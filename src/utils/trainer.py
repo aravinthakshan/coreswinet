@@ -66,7 +66,7 @@ def train(
     
     # Loss functions
     mse_criterion = nn.MSELoss()
-    contrastive_loss_fn = ContrastiveLoss(batch_size=batch_size, temperature=contrastive_temperature)
+    # contrastive_loss_fn = ContrastiveLoss(batch_size=batch_size, temperature=contrastive_temperature)
     texture_loss_fn = TextureLoss()
     
     # Metrics
@@ -229,11 +229,11 @@ def train(
                 
                 # Calculate losses
                 mse_loss = mse_criterion(output, clean)
-                contrastive_loss = contrastive_loss_fn(f1, f2)
+                # contrastive_loss = contrastive_loss_fn(f1, f2)
                 texture_LOSS = texture_loss_fn(output,clean)
                 
                 # Combined loss
-                loss = mse_loss + 0.05 * contrastive_loss 
+                loss = mse_loss + texture_LOSS
                 
                 loss.backward()
                 optimizer.step()
