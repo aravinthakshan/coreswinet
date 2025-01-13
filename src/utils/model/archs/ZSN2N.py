@@ -61,16 +61,20 @@ def train_n2n(
 
     # Train N2N
     model.train()
-    for epoch in tqdm(range(epochs)):
+
+
+    for epoch in tqdm(range(epochs), desc="Training Progress"):
         loss = loss_func(noisy_img)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
         scheduler.step()
         
-        if epoch % 100 == 0:  # Print PSNR periodically
+        if epoch % 100 == 0:  
             psnr = test(model, noisy_img, clean_img)
-            print(f"Epoch {epoch}, PSNR: {psnr:.2f}")
+            tqdm.write(f"Epoch {epoch}, PSNR: {psnr:.2f}")
+            tqdm.desc = f"Training Progress - Epoch {epoch}, PSNR: {psnr:.2f}"
+
     
     return model
 
