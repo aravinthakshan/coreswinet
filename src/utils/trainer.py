@@ -232,7 +232,7 @@ def train(
                 texture_LOSS = texture_loss_fn(output,clean)
                 
                 # Combined loss
-                loss = mse_loss + texture_LOSS + contrastive_loss 
+                loss = mse_loss + 0.01*contrastive_loss 
                 
                 loss.backward()
                 optimizer.step()
