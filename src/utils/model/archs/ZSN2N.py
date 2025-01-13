@@ -85,8 +85,7 @@ def train_n2n(
             tqdm.write(f"Epoch {epoch}, PSNR: {psnr:.2f}")
             tqdm.desc = f"Training Progress - Epoch {epoch}, PSNR: {psnr:.2f}"
 
-
-    return model
+    return model, psnr 
 
 class N2NNetwork(nn.Module):
     def __init__(self, n_chan=3, chan_embed=48):
