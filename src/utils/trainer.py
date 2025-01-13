@@ -64,7 +64,7 @@ def train(
     # Loss functions
     mse_criterion = nn.MSELoss()
     contrastive_loss_fn = ContrastiveLoss(batch_size=batch_size, temperature=contrastive_temperature)
-    texture_loss_fn = texture_LOSS()
+    texture_loss_fn = TextureLoss()
     
     # Metrics
     psnr_metric = torchmetrics.image.PeakSignalNoiseRatio().to(device)
@@ -113,7 +113,7 @@ def train(
                 texture_LOSS = texture_loss_fn(output,clean)
                 
                 # Combined loss
-                loss = 0.5 * (mse_loss + texture_LOSS ) + contrastive_loss 
+                loss = mse_loss + texture_LOSS + contrastive_loss 
                 
                 loss.backward()
                 optimizer.step()
