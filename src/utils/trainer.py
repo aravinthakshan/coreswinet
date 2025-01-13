@@ -22,7 +22,7 @@ def train(
     wandb_debug,
     device='cuda',
     lr=3e-3,
-    n2n_epochs=200, #### CHANGE THIS BACK TO 1000
+    n2n_epochs=1000, #### CHANGE THIS BACK TO 1000
     contrastive_temperature=0.5
 ):
 

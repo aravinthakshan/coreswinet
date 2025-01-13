@@ -5,19 +5,12 @@ import torch.optim as optim
 from tqdm import tqdm
 from torchvision.transforms import functional as TF
 import numpy as np
-import os 
-import torch
-import torch.nn.functional as F
 import numpy as np
-from PIL import Image
-import torchvision.transforms as transforms
+
 
 def test(model, noisy_img, clean_img, save_dir="predictions/"):
     with torch.no_grad():
-        # Calculate the prediction
         pred = torch.clamp(noisy_img - model(noisy_img), 0, 1)
-        
-        # Calculate MSE and PSNR
         mse = F.mse_loss(clean_img, pred).item()
         psnr = 10 * np.log10(1 / mse)
         
