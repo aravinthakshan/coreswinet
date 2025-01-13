@@ -5,13 +5,6 @@ import torch.optim as optim
 from tqdm import tqdm
 from torchvision.transforms import functional as TF
 import numpy as np
-from typing import Tuple, Optional
-
-import torch
-import torch.nn.functional as F
-import torch.optim as optim
-from tqdm import tqdm
-import numpy as np
 
 def test(model, noisy_img, clean_img):
     with torch.no_grad():
@@ -19,6 +12,12 @@ def test(model, noisy_img, clean_img):
         mse = F.mse_loss(clean_img, pred).item()
         psnr = 10 * np.log10(1/mse)
     return psnr
+
+def un_tan_fi(data):
+    d = data.clone()
+    d += 1
+    d /= 2
+    return d
 
 def train_n2n(
     epochs: int,
@@ -32,6 +31,7 @@ def train_n2n(
     # Get single image pair from dataset
     noisy_img, clean_img = next(iter(dataloader))
     noisy_img, clean_img = noisy_img.to(device), clean_img.to(device)
+    clean_img = un_tan_fi(clean_img)
     
     # Setup optimizer and scheduler
     optimizer = optim.Adam(model.parameters(), lr=0.001)
