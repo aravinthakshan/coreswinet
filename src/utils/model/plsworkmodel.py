@@ -104,16 +104,15 @@ class Model(nn.Module):
         swin_out = swin_block(feat_reshaped)
         return swin_out.transpose(1, 2).reshape(B, C, H, W)
 
-    def forward(self, x_noisy, x_n2n):
+    def forward(self, x_noisy):
         """
         Forward pass of the model
         Args:
             x_noisy (torch.Tensor): Noisy input image
-            x_n2n (torch.Tensor): N2N denoised version of the input image
         """
         # Get features from both encoders
         features1 = list(self.encoder1(x_noisy))
-        features2 = list(self.encoder2(x_n2n))
+        features2 = list(self.encoder2(x_noisy))
 
         # Process each encoder level
         processed_features = []

@@ -205,27 +205,56 @@ def train(
     #         use_n2n = False
 
     # main_vis(val_dir)
+
+
     def pair_downsampler(img):
-        c = img.shape[1]
+        """
+        Applies two downsampling filters to the input image batch.
+        Args:
+            img (torch.Tensor): Input tensor of shape (batch_size, channels, height, width).
+
+        Returns:
+            Tuple[torch.Tensor, torch.Tensor]: Downsampled outputs with the same batch size and channel dimensions.
+        """
+        batch_size, c, _, _ = img.shape
         filter1 = torch.FloatTensor([[[[0, 0.5], [0.5, 0]]]]).to(img.device)
         filter2 = torch.FloatTensor([[[[0.5, 0], [0, 0.5]]]]).to(img.device)
-        filter1 = filter1.repeat(c, 1, 1, 1)
+        filter1 = filter1.repeat(c, 1, 1, 1)  # Repeat filters for each channel
         filter2 = filter2.repeat(c, 1, 1, 1)
+
+        # Perform depthwise convolutions
         output1 = F.conv2d(img, filter1, stride=2, groups=c)
         output2 = F.conv2d(img, filter2, stride=2, groups=c)
         return output1, output2
 
     def n2n_loss_func(model, noisy_img):
+        """
+        Computes the Noise2Noise loss for a batch of noisy images.
+        Args:
+            model: The denoising model, assumed to return a tuple (output, f1, f2).
+            noisy_img (torch.Tensor): Batch of noisy images of shape (batch_size, channels, height, width).
+
+        Returns:
+            torch.Tensor: The computed loss value.
+        """
+        # Downsample noisy images into two sets
         noisy1, noisy2 = pair_downsampler(noisy_img)
-        pred1 = noisy1 - model(noisy1,noisy1)[0]  # Assuming model returns (output, f1, f2)
-        pred2 = noisy2 - model(noisy2,noisy1)[0]
+
+        # Predict noise using the model
+        pred1 = noisy1 - model(noisy1)[0]  # Assuming model returns (output, f1, f2)
+        pred2 = noisy2 - model(noisy2)[0]
+
+        # Compute the residual loss
         loss_res = 0.5 * (F.mse_loss(noisy1, pred2) + F.mse_loss(noisy2, pred1))
-        
-        noisy_denoised = noisy_img - model(noisy_img,noisy_img)[0]
+
+        # Compute the consistency loss
+        noisy_denoised = noisy_img - model(noisy_img)[0]
         denoised1, denoised2 = pair_downsampler(noisy_denoised)
         loss_cons = 0.5 * (F.mse_loss(pred1, denoised1) + F.mse_loss(pred2, denoised2))
-        
+
+        # Total loss
         return loss_res + loss_cons
+
 
     # Training loop
     for epoch in range(epochs):
@@ -243,10 +272,10 @@ def train(
                 optimizer.zero_grad()
                 
                 # Calculate N2N style loss
-                n2n_loss = n2n_loss_func(model, noise)
+                n2n_loss = n2n_loss_func(model,noise)
                 
                 # Get output for metrics calculation
-                output, f1, f2 = model(noise,noise)
+                output, f1, f2 = model(noise)
                 
                 # Calculate additional losses
                 # contrastive_loss = contrastive_loss_fn(f1, f2)
