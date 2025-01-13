@@ -65,7 +65,7 @@ def train_n2n(
     model.train()
 
 
-    for epoch in tqdm(range(epochs), desc="Training Progress"):
+    for epoch in tqdm(range(epochs), desc="Training ZSN2N"):
         loss = loss_func(noisy_img)
         optimizer.zero_grad()
         loss.backward()
