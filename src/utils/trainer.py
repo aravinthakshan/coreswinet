@@ -41,7 +41,7 @@ def train(
     # Train N2N model
     print("Training N2N model...")
     # Initialize model
-    model, psnr_threshold = N2NNetwork()  ### N2N 
+    model, psnr_threshold = N2NNetwork()  ### N2N
     
     print("PSNR: THRESHOLD",psnr_threshold)
     
