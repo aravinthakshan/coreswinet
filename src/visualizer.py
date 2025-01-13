@@ -3,7 +3,7 @@ import torch
 import numpy as np
 import wandb 
 import torchmetrics.image
-from utils.dataloader import CBSD68Dataset 
+from utils.dataloader import CBSD68Dataset,BSD400 
 from torch.utils.data import DataLoader
 from utils.model.plsworkmodel import Model  
 from utils.model.archs.ZSN2N import N2NNetwork
@@ -99,7 +99,7 @@ def main_vis(val_dir, model_path="./best_models.pth", use_wandb=True, noise_leve
     main_model.to(device).eval()
     n2n_model.to(device).eval()
     
-    dataset = CBSD68Dataset(
+    dataset = BSD400(
         root_dir=val_dir, 
         noise_level=noise_level, 
         crop_size=crop_size, 

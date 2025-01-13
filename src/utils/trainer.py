@@ -2,7 +2,7 @@ import wandb
 from torch.utils.data import DataLoader
 from utils.misc import get_metrics
 from utils.model.plsworkmodel import Model
-from utils.dataloader import CBSD68Dataset
+from utils.dataloader import CBSD68Dataset,BSD400
 from tqdm import tqdm
 import torch
 import torch.nn as nn
@@ -28,7 +28,7 @@ def train(
 
 
     # Dataset and dataloaders
-    dataset = CBSD68Dataset(root_dir=train_dir, noise_level=25, crop_size=256, num_crops=34, normalize=True)
+    dataset = BSD400(root_dir=train_dir, noise_level=25, crop_size=256, num_crops=34, normalize=True)
     train_size = int(0.8 * len(dataset))
     test_size = len(dataset) - train_size
     train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
