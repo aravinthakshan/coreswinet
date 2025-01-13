@@ -10,6 +10,12 @@ import torch.autograd as autograd
 import math 
 import torch
 import torch.nn as nn
+from segmentation_models_pytorch.utils import base
+import torch.autograd as autograd
+from torch.autograd import Variable
+import numpy as np
+import functools
+
 
 class TextureLoss(nn.Module):
     def __init__(self):
@@ -395,14 +401,6 @@ class CharbonnierLoss(nn.Module):
         else:  # 'none'
             return self.loss_weight * loss
 
-import torch
-import torch.nn as nn
-import torch.nn.functional as F
-from segmentation_models_pytorch.utils import base
-import torch.autograd as autograd
-from torch.autograd import Variable
-import numpy as np
-import functools
 
 def reduce_loss(loss, reduction):
     """Reduce loss as specified.
