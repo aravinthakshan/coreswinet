@@ -13,10 +13,10 @@ def test(model, noisy_img, clean_img, save_dir="predictions/"):
         pred = torch.clamp(noisy_img - model(noisy_img), 0, 1)
         mse = F.mse_loss(clean_img, pred).item()
         psnr = 10 * np.log10(1 / mse)
-        
-    min_value = pred.min().item()
-    max_value = pred.max().item()
-    print(f"Range of values in pred_img: min={min_value}, max={max_value}")
+
+    # min_value = pred.min().item()
+    # max_value = pred.max().item()
+    # print(f"Range of values in pred_img: min={min_value}, max={max_value}")
 
     return psnr
 
