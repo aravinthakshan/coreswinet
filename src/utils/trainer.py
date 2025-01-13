@@ -25,18 +25,7 @@ def train(
     n2n_epochs=200, #### CHANGE THIS BACK TO 1000
     contrastive_temperature=0.5
 ):
-    # Training configuration
-    train_config = {
-        'epochs': epochs,
-        'batch_size': batch_size,
-        # 'dataset_name': dataset_name,
-        'train_dir': train_dir,
-        'val_dir': val_dir,
-        'device': device,
-        'learning_rate': lr,
-        'n2n_epochs': n2n_epochs,
-        'contrastive_temperature': contrastive_temperature,
-    }
+
 
     # Dataset and dataloaders
     dataset = CBSD68Dataset(root_dir=train_dir, noise_level=25, crop_size=256, num_crops=34, normalize=True)
@@ -93,7 +82,6 @@ def train(
         'best_epoch': 0,
         'max_psnr': 0,
         'max_ssim': 0,
-        'train_config': train_config,
     }
     
     # Training loop

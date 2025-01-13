@@ -3,33 +3,27 @@ import argparse
 import wandb
 
 def main(args):
-    config = {
-        'epochs': args.epochs,
-        'train_dir': args.train_dir,
-        'val_dir': args.val_dir,
-        'batch_size': args.batch_size,
-        # 'dataset_name': args.dataset_name,
-        'device': args.device,
-        'lr': args.lr,
-        'wandb_debug': args.wandbd
+    config={
+        'epochs' : args.epochs,
+        'train_dir' : args.train_dir,
+        'val_dir' : args.val_dir,
+        'batch_size' : args.batch_size,
+        'device' : args.device,
+        'lr' : args.lr,
+        'wandb': args.wandbd
     }
-    
     if args.wandbd:
         wandb.login(key=args.key)
         wandb.init(
-            project="DeFInet",
-            config={
+            project = "DeFInet",
+            config = {
                 "Epochs": args.epochs,
-                # "Dataset": args.dataset_name,
+                "Dataset": args.dataset_name,
                 "Batch Size": args.batch_size,
                 "Learning Rate": args.lr
             }
         )
-    
-    # Modify here to unpack the dictionary
-    train_model(**config)  # Unpack the dictionary into arguments
-
-
+    train_model(config)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -40,7 +34,6 @@ if __name__ == '__main__':
     
     parser.add_argument('--train_dir', type=str, required=True)
     parser.add_argument('--val_dir', type=str, required=True)
-    # parser.add_argument('--dataset_name', type=str, required=False, default = 'sidd')
     
     parser.add_argument('--wandbd', type=bool,default=True)
     
