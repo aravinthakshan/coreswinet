@@ -13,7 +13,6 @@ from utils.soap_optimizer import SOAP
 from utils.model.archs.ZSN2N import train_n2n, N2NNetwork
 from utils.loss import ContrastiveLoss
 
-
 def train_model(
     epochs,
     batch_size,
@@ -26,6 +25,19 @@ def train_model(
     n2n_epochs=100,
     contrastive_temperature=0.5
 ):
+    # Training configuration
+    train_config = {
+        'epochs': epochs,
+        'batch_size': batch_size,
+        'dataset_name': dataset_name,
+        'train_dir': train_dir,
+        'val_dir': val_dir,
+        'device': device,
+        'learning_rate': lr,
+        'n2n_epochs': n2n_epochs,
+        'contrastive_temperature': contrastive_temperature,
+    }
+
     # Dataset and dataloaders
     dataset = CBSD68Dataset(root_dir=train_dir, noise_level=25, crop_size=256, num_crops=34, normalize=True)
     train_size = int(0.8 * len(dataset))
@@ -42,8 +54,7 @@ def train_model(
     # Initialize model
     model = N2NNetwork()
     
-    n2n_model = train_n2n(epochs=1000, model=model, dataloader=train_loader)
-
+    n2n_model = train_n2n(epochs=n2n_epochs, model=model, dataloader=train_loader)
 
     n2n_model.eval()  # Set N2N model to evaluation mode
 
@@ -82,6 +93,7 @@ def train_model(
         'best_epoch': 0,
         'max_psnr': 0,
         'max_ssim': 0,
+        'train_config': train_config,
     }
     
     # Training loop
@@ -181,6 +193,8 @@ def train_model(
             
             if wandb_debug:
                 wandb.log(logger)
+                
+    main_vis(val_dir)
 
 # def test(test_dir, model_path, device='cuda'):
 #     """Test the model on a test dataset"""

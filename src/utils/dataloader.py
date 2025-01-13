@@ -104,9 +104,11 @@ class CBSD68Dataset(Dataset):
                 self.image_pairs.append((noisy_crop, clean_crop))
 
     def __len__(self):
-        return len(self.image_pairs)
+        return 25
+        # return len(self.image_pairs)
 
     def __getitem__(self, idx):
+        # return 4
         noisy, clean = self.image_pairs[idx]
         return noisy, clean
 

@@ -31,6 +31,8 @@ def train_n2n(
     # Get single image pair from dataset
     noisy_img, clean_img = next(iter(dataloader))
     noisy_img, clean_img = noisy_img.to(device), clean_img.to(device)
+    
+    # beacuse it's comparing against a tanified image ( very low psnr )
     clean_img = un_tan_fi(clean_img)
     
     # Setup optimizer and scheduler
