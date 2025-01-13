@@ -206,85 +206,87 @@ def train(
 
     # main_vis(val_dir)
 
-    def pair_downsampler(img):
+
+    def pair_downsampler(features):
         """
-        Applies two downsampling filters to the input image batch.
+        Applies two downsampling filters to the feature map tensor.
         Args:
-            img (torch.Tensor): Input tensor of shape (batch_size, channels, height, width).
+            features (torch.Tensor): Input tensor of shape (batch_size, channels, height, width).
 
         Returns:
             Tuple[torch.Tensor, torch.Tensor]: Downsampled outputs with the same batch size and channel dimensions.
         """
-        batch_size, c, h, w = img.shape
-        print(f"Input image shape: {img.shape}")  # Debug print
+        batch_size, c, h, w = features.shape
+        print(f"Input feature map shape: {features.shape}")  # Debug print
 
-        filter1 = torch.FloatTensor([[[[0, 0.5], [0.5, 0]]]]).to(img.device)
-        filter2 = torch.FloatTensor([[[[0.5, 0], [0, 0.5]]]]).to(img.device)
+        # Define downsampling filters for each channel
+        filter1 = torch.FloatTensor([[[[0, 0.5], [0.5, 0]]]]).to(features.device)
+        filter2 = torch.FloatTensor([[[[0.5, 0], [0, 0.5]]]]).to(features.device)
         filter1 = filter1.repeat(c, 1, 1, 1)  # Repeat filters for each channel
         filter2 = filter2.repeat(c, 1, 1, 1)
 
-        # Perform depthwise convolutions
-        output1 = F.conv2d(img, filter1, stride=2, groups=c)
-        output2 = F.conv2d(img, filter2, stride=2, groups=c)
+        # Perform depthwise convolutions (downsampling)
+        output1 = F.conv2d(features, filter1, stride=2, groups=c)
+        output2 = F.conv2d(features, filter2, stride=2, groups=c)
 
-        # Debug print for output shapes after downsampling
-        print(f"Output1 shape after downsampling: {output1.shape}")
-        print(f"Output2 shape after downsampling: {output2.shape}")
+        # Debug prints for downsampled feature maps
+        print(f"Downsampled Feature Map 1 shape: {output1.shape}")
+        print(f"Downsampled Feature Map 2 shape: {output2.shape}")
 
         return output1, output2
 
-    def n2n_loss_func(model, noisy_img):
+    def n2n_loss_func(model, noisy_features):
         """
-        Computes the Noise2Noise loss for a batch of noisy images.
+        Computes the Noise2Noise loss for feature maps.
         Args:
             model: The denoising model, assumed to return a tuple (output, f1, f2).
-            noisy_img (torch.Tensor): Batch of noisy images of shape (batch_size, channels, height, width).
+            noisy_features (torch.Tensor): Batch of noisy feature maps of shape (batch_size, channels, height, width).
 
         Returns:
             torch.Tensor: The computed loss value.
         """
-        print(f"Input noisy image shape: {noisy_img.shape}")  # Debug print
+        print(f"Input noisy feature map shape: {noisy_features.shape}")  # Debug print
 
-        # Downsample noisy images into two sets
-        noisy1, noisy2 = pair_downsampler(noisy_img)
+        # Pass noisy features through the model to get f1, f2 (the feature maps)
+        output, f1, f2 = model(noisy_features)
 
-        # Debug prints for downsampled images
-        print(f"Noisy1 shape after downsampling: {noisy1.shape}")
-        print(f"Noisy2 shape after downsampling: {noisy2.shape}")
+        # Downsample the noisy feature maps (f1, f2)
+        noisy1, noisy2 = pair_downsampler(f1)
+        print(f"Noisy Feature Map 1 shape after downsampling: {noisy1.shape}")
+        print(f"Noisy Feature Map 2 shape after downsampling: {noisy2.shape}")
 
-        # Predict noise using the model
+        # Predict noise using the model (f1 and f2 are the feature maps from the model)
         pred1 = noisy1 - model(noisy1)[0]  # Assuming model returns (output, f1, f2)
         pred2 = noisy2 - model(noisy2)[0]
 
         # Debug prints for predictions
-        print(f"Pred1 shape after model prediction: {pred1.shape}")
-        print(f"Pred2 shape after model prediction: {pred2.shape}")
+        print(f"Predicted Feature Map 1 shape after model prediction: {pred1.shape}")
+        print(f"Predicted Feature Map 2 shape after model prediction: {pred2.shape}")
 
-        # Compute the residual loss
+        # Compute the residual loss (similar to contrastive loss)
         loss_res = 0.5 * (F.mse_loss(noisy1, pred2) + F.mse_loss(noisy2, pred1))
 
         # Debug print for residual loss
         print(f"Residual loss: {loss_res.item()}")
 
-        # Compute the consistency loss
-        noisy_denoised = noisy_img - model(noisy_img)[0]
-        denoised1, denoised2 = pair_downsampler(noisy_denoised)
-        
-        # Debug prints for denoised images
-        print(f"Denoised1 shape: {denoised1.shape}")
-        print(f"Denoised2 shape: {denoised2.shape}")
+        # Compute the consistency loss (using denoised feature maps)
+        noisy_denoised = noisy_features - model(noisy_features)[0]
+        denoised1, denoised2 = pair_downsampler(f2)  # We are using f2 here for consistency
+
+        # Debug prints for denoised features
+        print(f"Denoised Feature Map 1 shape: {denoised1.shape}")
+        print(f"Denoised Feature Map 2 shape: {denoised2.shape}")
 
         loss_cons = 0.5 * (F.mse_loss(pred1, denoised1) + F.mse_loss(pred2, denoised2))
 
         # Debug print for consistency loss
         print(f"Consistency loss: {loss_cons.item()}")
 
-        # Total loss
+        # Total loss (sum of residual and consistency losses)
         total_loss = loss_res + loss_cons
         print(f"Total loss: {total_loss.item()}")  # Debug print
 
         return total_loss
-
 
     # Training loop
     for epoch in range(epochs):
@@ -301,18 +303,19 @@ def train(
                 
                 optimizer.zero_grad()
                 
-                # Calculate N2N style loss
-                n2n_loss = n2n_loss_func(model,noise)
+                # Calculate N2N style loss on feature maps
+                n2n_loss = n2n_loss_func(model, noise)  # N2N loss applied at the feature map level
                 
-                # Get output for metrics calculation
+                # Get output and feature maps from the model
                 output, f1, f2 = model(noise)
                 
-                # Calculate additional losses
+                # Optionally, you can compute other losses like contrastive_loss or texture_loss here
                 # contrastive_loss = contrastive_loss_fn(f1, f2)
                 # texture_loss = texture_loss_fn(output, clean)
+                mse_loss = mse_criterion(output, clean)
                 
-                # Combined loss
-                loss = n2n_loss 
+                # Combined loss (example)
+                loss = n2n_loss + mse_loss  # Can be combined with other losses if needed
                 
                 # + 0.001 * contrastive_loss + texture_loss
                 
@@ -353,11 +356,16 @@ def train(
             with torch.no_grad():
                 for batch_data in loader:
                     noise, clean = [x.to(device) for x in batch_data]
-                    output, _, _ = model(noise,noise)
+                    
+                    # Get output from the model (f1, f2 are feature maps, output is the denoised result)
+                    output, _, _ = model(noise)
+                    
+                    # Calculate metrics for the validation set
                     psnr_val_itr, ssim_val_itr = get_metrics(clean, output, psnr_metric, ssim_metric)
                     psnr_val += psnr_val_itr
                     ssim_val += ssim_val_itr
             
+            # Average validation metrics
             psnr_val /= len(val_loader)
             ssim_val /= len(val_loader)
             
@@ -375,7 +383,7 @@ def train(
                     'model': model.state_dict(),
                 }, './best_model.pth')
                 print(f"Saved Model at epoch {epoch}.")
-                
+            
             print(f"\nVal PSNR: {psnr_val:.4f}")
             print(f"Val SSIM: {ssim_val:.4f}")
             
@@ -384,6 +392,7 @@ def train(
 
     if wandb_debug:
         main_vis(val_dir)
+
     
 def train_model(config):
     train(
