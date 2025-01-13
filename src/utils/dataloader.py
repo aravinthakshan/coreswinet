@@ -145,7 +145,7 @@ class BSD400(Dataset):
         self.tanfi = tanfi
 
         self.original_dir = os.path.join(root_dir, "BSD400_noisy_0")
-        self.noisy_dir = os.path.join(root_dir, "BSD_400_"+self.noise_level)
+        self.noisy_dir = os.path.join(root_dir, "BSD400_"+self.noise_level)
 
         self.image_paths = [fname for fname in os.listdir(self.original_dir) if fname.endswith('.jpg')]
 
