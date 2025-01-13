@@ -13,23 +13,23 @@ from utils.soap_optimizer import SOAP
 from utils.model.archs.ZSN2N import train_n2n, N2NNetwork
 from utils.loss import ContrastiveLoss
 
-def train_model(
+def train(
     epochs,
     batch_size,
-    dataset_name,
+    # dataset_name,
     train_dir,
     val_dir,
     wandb_debug,
     device='cuda',
     lr=3e-3,
-    n2n_epochs=100, #### CHANGE THIS BACK TO 1000
+    n2n_epochs=200, #### CHANGE THIS BACK TO 1000
     contrastive_temperature=0.5
 ):
     # Training configuration
     train_config = {
         'epochs': epochs,
         'batch_size': batch_size,
-        'dataset_name': dataset_name,
+        # 'dataset_name': dataset_name,
         'train_dir': train_dir,
         'val_dir': val_dir,
         'device': device,
@@ -196,6 +196,20 @@ def train_model(
                 
     main_vis(val_dir)
 
+
+def train_model(config):
+    train(
+        config['epochs'],
+        config['batch_size'],
+        # config['dataset_name'],
+        config['train_dir'],
+        config['val_dir'],
+        config['wandb'],
+        config['device'],
+        config['lr'],
+        config['int_channel']
+    )
+    
 # def test(test_dir, model_path, device='cuda'):
 #     """Test the model on a test dataset"""
 #     test_dataset = CBSD68Dataset(root_dir=test_dir, noise_level=25, crop_size=256, num_crops=1, normalize=True)

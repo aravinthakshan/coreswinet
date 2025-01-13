@@ -8,7 +8,7 @@ def main(args):
         'train_dir': args.train_dir,
         'val_dir': args.val_dir,
         'batch_size': args.batch_size,
-        'dataset_name': args.dataset_name,
+        # 'dataset_name': args.dataset_name,
         'device': args.device,
         'lr': args.lr,
         'wandb_debug': args.wandbd
@@ -20,7 +20,7 @@ def main(args):
             project="DeFInet",
             config={
                 "Epochs": args.epochs,
-                "Dataset": args.dataset_name,
+                # "Dataset": args.dataset_name,
                 "Batch Size": args.batch_size,
                 "Learning Rate": args.lr
             }
@@ -40,7 +40,7 @@ if __name__ == '__main__':
     
     parser.add_argument('--train_dir', type=str, required=True)
     parser.add_argument('--val_dir', type=str, required=True)
-    parser.add_argument('--dataset_name', type=str, required=False, default = 'sidd')
+    # parser.add_argument('--dataset_name', type=str, required=False, default = 'sidd')
     
     parser.add_argument('--wandbd', type=bool,default=True)
     
