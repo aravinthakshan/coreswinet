@@ -202,8 +202,8 @@ def train(
         if max_psnr > psnr_threshold:
             print(f"PSNR threshold exceeded at epoch {epoch + 1}. Disabling N2N model.")
             use_n2n = False
-
-    main_vis(val_dir)
+        
+        main_vis(val_dir)
 
     # # Training loop
     # for epoch in range(epochs):
