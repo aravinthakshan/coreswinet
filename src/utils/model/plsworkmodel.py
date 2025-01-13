@@ -54,7 +54,7 @@ class Model(nn.Module):
         self.prelus = nn.ModuleList([
             PReLUBlock(ch) for ch in encoder_channels
         ])
-
+        
         # Create Swin Transformer blocks for specific encoder levels
         self.swin_blocks = nn.ModuleList()
         for i, ch in enumerate(encoder_channels):
@@ -73,7 +73,7 @@ class Model(nn.Module):
             ])
             self.swin_blocks.append(swin_block_list)
 
-        # Channel attention for bottleneck
+        # squeeze attention for bottleneck
         self.bottleneck_attention = SqueezeExcitationBlock(encoder_channels[-1])
         
         # Contrastive heads
