@@ -13,7 +13,7 @@ def test(model, noisy_img, clean_img):
         psnr = 10 * np.log10(1/mse)
     min_value = pred.min().item()
     max_value = pred.max().item()
-    print(f"Range of values in noisy_img: min={min_value}, max={max_value}")
+    print(f"Range of values in pred_img: min={min_value}, max={max_value}")
     return psnr
 
 def un_tan_fi(data):
