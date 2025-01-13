@@ -111,7 +111,7 @@ def train(
                 contrastive_loss = contrastive_loss_fn(f1, f2)
                 
                 # Combined loss
-                loss = mse_loss + contrastive_loss
+                loss = mse_loss + contrastive_loss*0.5
                 
                 loss.backward()
                 optimizer.step()
