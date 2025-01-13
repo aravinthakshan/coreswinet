@@ -11,7 +11,7 @@ import torchmetrics.image
 from visualizer import main_vis
 from utils.soap_optimizer import SOAP
 from utils.model.archs.ZSN2N import train_n2n, N2NNetwork
-from utils.loss import ContrastiveLoss
+from utils.loss import ContrastiveLoss, TextureLoss
 
 def train(
     epochs,
@@ -64,6 +64,7 @@ def train(
     # Loss functions
     mse_criterion = nn.MSELoss()
     contrastive_loss_fn = ContrastiveLoss(batch_size=batch_size, temperature=contrastive_temperature)
+    texture_loss_fn = texture_LOSS()
     
     # Metrics
     psnr_metric = torchmetrics.image.PeakSignalNoiseRatio().to(device)
@@ -109,9 +110,10 @@ def train(
                 # Calculate losses
                 mse_loss = mse_criterion(output, clean)
                 contrastive_loss = contrastive_loss_fn(f1, f2)
+                texture_LOSS = texture_loss_fn(output,clean)
                 
                 # Combined loss
-                loss = mse_loss + contrastive_loss
+                loss = 0.5 * (mse_loss + texture_LOSS ) + contrastive_loss 
                 
                 loss.backward()
                 optimizer.step()

@@ -8,6 +8,44 @@ import torchvision.transforms as T
 from torch.autograd import Variable
 import torch.autograd as autograd
 import math 
+import torch
+import torch.nn as nn
+
+class TextureLoss(nn.Module):
+    def __init__(self):
+        super(TextureLoss, self).__init__()
+        self.mse_loss = nn.MSELoss()
+
+    def gram_matrix(self, features):
+        """
+        Compute the Gram matrix for a set of features.
+        Args:
+            features (torch.Tensor): Feature maps of shape (B, C, H, W).
+        Returns:
+            torch.Tensor: Gram matrix of shape (B, C, C).
+        """
+        B, C, H, W = features.size()
+        # Reshape features to (B, C, H*W)
+        features = features.view(B, C, -1)
+        # Compute the Gram matrix
+        gram = torch.bmm(features, features.transpose(1, 2))
+        # Normalize the Gram matrix
+        gram /= C * H * W
+        return gram
+
+    def forward(self, generated_features, target_features):
+        """
+        Compute the texture loss between generated and target features.
+        Args:
+            generated_features (torch.Tensor): Features from the generated image.
+            target_features (torch.Tensor): Features from the target image.
+        Returns:
+            torch.Tensor: Texture loss value.
+        """
+        gram_generated = self.gram_matrix(generated_features)
+        gram_target = self.gram_matrix(target_features)
+        loss = self.mse_loss(gram_generated, gram_target)
+        return loss
 
 def mse_loss(pred, target):
     return F.mse_loss(pred, target, reduction='none')
