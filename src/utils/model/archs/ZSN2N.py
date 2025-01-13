@@ -75,7 +75,6 @@ def train_n2n(
             tqdm.write(f"Epoch {epoch}, PSNR: {psnr:.2f}")
             tqdm.desc = f"Training Progress - Epoch {epoch}, PSNR: {psnr:.2f}"
 
-    
     return model
 
 class N2NNetwork(nn.Module):
