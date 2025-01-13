@@ -12,6 +12,7 @@ from visualizer import main_vis
 from utils.soap_optimizer import SOAP
 from utils.model.archs.ZSN2N import train_n2n, N2NNetwork
 from utils.loss import ContrastiveLoss, TextureLoss
+import torch.nn.functional as F
 
 def train(
     epochs,
@@ -88,122 +89,7 @@ def train(
         'max_ssim': 0,
     }
     # Initialize the flag to use the N2N model
-    use_n2n = True
-
-    # Training loop
-    for epoch in range(epochs):
-        model.train()
-        total_loss = []
-        psnr_train, ssim_train = 0, 0
-        
-        psnr_metric.reset()
-        ssim_metric.reset()
-        
-        with tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs} - Training Progress") as loader:
-            for itr, batch_data in enumerate(loader):
-                noise, clean = [x.to(device) for x in batch_data]
-                
-                if use_n2n:
-                    # Get N2N denoised output
-                    with torch.no_grad():
-                        n2n_output = n2n_model.denoise(noise)
-                else:
-                    # Skip N2N model and use noisy image directly
-                    n2n_output = noise
-                
-                optimizer.zero_grad()
-                
-                # Forward pass with both noisy and N2N denoised input
-                output, f1, f2 = model(noise, n2n_output)
-                
-                # Calculate losses
-                mse_loss = mse_criterion(output, clean)
-                contrastive_loss = contrastive_loss_fn(f1, f2)
-                # texture_LOSS = texture_loss_fn(output, clean)
-                
-                # Combined loss
-                loss = mse_loss + 0.01*contrastive_loss
-                
-                loss.backward()
-                optimizer.step()
-                
-                # Calculate metrics
-                psnr_train_itr, ssim_train_itr = get_metrics(clean, output, psnr_metric, ssim_metric)
-                
-                total_loss.append(loss.item())
-                psnr_train += psnr_train_itr
-                ssim_train += ssim_train_itr
-                
-                loader.set_postfix(loss=loss.item(), psnr=psnr_train_itr, ssim=ssim_train_itr)
-            
-            # Average metrics
-            psnr_train /= (itr + 1)
-            ssim_train /= (itr + 1)
-            avg_loss = sum(total_loss) / len(total_loss)
-            
-            # Update logger
-            logger['train_loss'] = avg_loss
-            logger['train_psnr'] = psnr_train
-            logger['train_ssim'] = ssim_train
-            
-            print(f'\nEpoch {epoch + 1}/{epochs}')
-            print(f'TRAIN Loss: {avg_loss:.4f}')
-            print(f'TRAIN PSNR: {psnr_train:.4f}')
-            print(f'TRAIN SSIM: {ssim_train:.4f}')
-            
-            psnr_metric.reset()
-            ssim_metric.reset()
-        
-        # Validation loop
-        model.eval()
-        with tqdm(val_loader, desc="Validation Progress") as loader:
-            psnr_val, ssim_val = 0, 0
-            with torch.no_grad():
-                for batch_data in loader:
-                    noise, clean = [x.to(device) for x in batch_data]
-                    
-                    if use_n2n:
-                        n2n_output = n2n_model.denoise(noise)
-                    else:
-                        n2n_output = noise
-                    
-                    output, _, _ = model(noise, n2n_output)
-                    psnr_val_itr, ssim_val_itr = get_metrics(clean, output, psnr_metric, ssim_metric)
-                    psnr_val += psnr_val_itr
-                    ssim_val += ssim_val_itr
-            
-            psnr_val /= len(val_loader)
-            ssim_val /= len(val_loader)
-            
-            logger['val_psnr'] = psnr_val
-            logger['val_ssim'] = ssim_val
-            logger['epoch'] = epoch + 1
-            
-            if max_ssim <= ssim_val:
-                max_ssim = ssim_val
-                max_psnr = psnr_val
-                logger['max_ssim'] = max_ssim
-                logger['max_psnr'] = max_psnr
-                logger['best_epoch'] = epoch + 1
-                # Save both models
-                torch.save({
-                    'main_model': model.state_dict(),
-                    'n2n_model': n2n_model.state_dict()
-                }, './best_models.pth')
-                print(f"Saved Models at epoch {epoch}.")
-                
-            print(f"\nVal PSNR: {psnr_val:.4f}")
-            print(f"Val SSIM: {ssim_val:.4f}")
-            
-            if wandb_debug:
-                wandb.log(logger)
-        
-        # Check if max_psnr exceeds threshold
-        if max_psnr > psnr_threshold:
-            print(f"PSNR threshold exceeded at epoch {epoch + 1}. Disabling N2N model.")
-            use_n2n = False
-
-    main_vis(val_dir)
+    # use_n2n = True
 
     # # Training loop
     # for epoch in range(epochs):
@@ -218,9 +104,13 @@ def train(
     #         for itr, batch_data in enumerate(loader):
     #             noise, clean = [x.to(device) for x in batch_data]
                 
-    #             # Get N2N denoised output
-    #             with torch.no_grad():
-    #                 n2n_output = n2n_model.denoise(noise)
+    #             if use_n2n:
+    #                 # Get N2N denoised output
+    #                 with torch.no_grad():
+    #                     n2n_output = n2n_model.denoise(noise)
+    #             else:
+    #                 # Skip N2N model and use noisy image directly
+    #                 n2n_output = noise
                 
     #             optimizer.zero_grad()
                 
@@ -230,10 +120,10 @@ def train(
     #             # Calculate losses
     #             mse_loss = mse_criterion(output, clean)
     #             contrastive_loss = contrastive_loss_fn(f1, f2)
-    #             texture_LOSS = texture_loss_fn(output,clean)
+    #             # texture_LOSS = texture_loss_fn(output, clean)
                 
     #             # Combined loss
-    #             loss = mse_loss + 0.001* contrastive_loss
+    #             loss = mse_loss + 0.01*contrastive_loss
                 
     #             loss.backward()
     #             optimizer.step()
@@ -272,7 +162,12 @@ def train(
     #         with torch.no_grad():
     #             for batch_data in loader:
     #                 noise, clean = [x.to(device) for x in batch_data]
-    #                 n2n_output = n2n_model.denoise(noise)
+                    
+    #                 if use_n2n:
+    #                     n2n_output = n2n_model.denoise(noise)
+    #                 else:
+    #                     n2n_output = noise
+                    
     #                 output, _, _ = model(noise, n2n_output)
     #                 psnr_val_itr, ssim_val_itr = get_metrics(clean, output, psnr_metric, ssim_metric)
     #                 psnr_val += psnr_val_itr
@@ -303,9 +198,134 @@ def train(
             
     #         if wandb_debug:
     #             wandb.log(logger)
-                
-    # main_vis(val_dir)
+        
+    #     # Check if max_psnr exceeds threshold
+    #     if max_psnr > psnr_threshold:
+    #         print(f"PSNR threshold exceeded at epoch {epoch + 1}. Disabling N2N model.")
+    #         use_n2n = False
 
+    # main_vis(val_dir)
+    def pair_downsampler(img):
+        c = img.shape[1]
+        filter1 = torch.FloatTensor([[[[0, 0.5], [0.5, 0]]]]).to(img.device)
+        filter2 = torch.FloatTensor([[[[0.5, 0], [0, 0.5]]]]).to(img.device)
+        filter1 = filter1.repeat(c, 1, 1, 1)
+        filter2 = filter2.repeat(c, 1, 1, 1)
+        output1 = F.conv2d(img, filter1, stride=2, groups=c)
+        output2 = F.conv2d(img, filter2, stride=2, groups=c)
+        return output1, output2
+
+    def n2n_loss_func(model, noisy_img):
+        noisy1, noisy2 = pair_downsampler(noisy_img)
+        pred1 = noisy1 - model(noisy1,noisy1)[0]  # Assuming model returns (output, f1, f2)
+        pred2 = noisy2 - model(noisy2,noisy1)[0]
+        loss_res = 0.5 * (F.mse_loss(noisy1, pred2) + F.mse_loss(noisy2, pred1))
+        
+        noisy_denoised = noisy_img - model(noisy_img,noisy_img)[0]
+        denoised1, denoised2 = pair_downsampler(noisy_denoised)
+        loss_cons = 0.5 * (F.mse_loss(pred1, denoised1) + F.mse_loss(pred2, denoised2))
+        
+        return loss_res + loss_cons
+
+    # Training loop
+    for epoch in range(epochs):
+        model.train()
+        total_loss = []
+        psnr_train, ssim_train = 0, 0
+        
+        psnr_metric.reset()
+        ssim_metric.reset()
+        
+        with tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs} - Training Progress") as loader:
+            for itr, batch_data in enumerate(loader):
+                noise, clean = [x.to(device) for x in batch_data]
+                
+                optimizer.zero_grad()
+                
+                # Calculate N2N style loss
+                n2n_loss = n2n_loss_func(model, noise)
+                
+                # Get output for metrics calculation
+                output, f1, f2 = model(noise,noise)
+                
+                # Calculate additional losses
+                # contrastive_loss = contrastive_loss_fn(f1, f2)
+                # texture_loss = texture_loss_fn(output, clean)
+                
+                # Combined loss
+                loss = n2n_loss 
+                
+                # + 0.001 * contrastive_loss + texture_loss
+                
+                loss.backward()
+                optimizer.step()
+                
+                # Calculate metrics against ground truth
+                psnr_train_itr, ssim_train_itr = get_metrics(clean, output, psnr_metric, ssim_metric)
+                
+                total_loss.append(loss.item())
+                psnr_train += psnr_train_itr
+                ssim_train += ssim_train_itr
+                
+                loader.set_postfix(loss=loss.item(), psnr=psnr_train_itr, ssim=ssim_train_itr)
+            
+            # Average metrics
+            psnr_train /= (itr + 1)
+            ssim_train /= (itr + 1)
+            avg_loss = sum(total_loss) / len(total_loss)
+            
+            # Update logger
+            logger['train_loss'] = avg_loss
+            logger['train_psnr'] = psnr_train
+            logger['train_ssim'] = ssim_train
+            
+            print(f'\nEpoch {epoch + 1}/{epochs}')
+            print(f'TRAIN Loss: {avg_loss:.4f}')
+            print(f'TRAIN PSNR: {psnr_train:.4f}')
+            print(f'TRAIN SSIM: {ssim_train:.4f}')
+            
+            psnr_metric.reset()
+            ssim_metric.reset()
+        
+        # Validation loop
+        model.eval()
+        with tqdm(val_loader, desc="Validation Progress") as loader:
+            psnr_val, ssim_val = 0, 0
+            with torch.no_grad():
+                for batch_data in loader:
+                    noise, clean = [x.to(device) for x in batch_data]
+                    output, _, _ = model(noise,noise)
+                    psnr_val_itr, ssim_val_itr = get_metrics(clean, output, psnr_metric, ssim_metric)
+                    psnr_val += psnr_val_itr
+                    ssim_val += ssim_val_itr
+            
+            psnr_val /= len(val_loader)
+            ssim_val /= len(val_loader)
+            
+            logger['val_psnr'] = psnr_val
+            logger['val_ssim'] = ssim_val
+            logger['epoch'] = epoch + 1
+            
+            if max_ssim <= ssim_val:
+                max_ssim = ssim_val
+                max_psnr = psnr_val
+                logger['max_ssim'] = max_ssim
+                logger['max_psnr'] = max_psnr
+                logger['best_epoch'] = epoch + 1
+                torch.save({
+                    'model': model.state_dict(),
+                }, './best_model.pth')
+                print(f"Saved Model at epoch {epoch}.")
+                
+            print(f"\nVal PSNR: {psnr_val:.4f}")
+            print(f"Val SSIM: {ssim_val:.4f}")
+            
+            if wandb_debug:
+                wandb.log(logger)
+
+    if wandb_debug:
+        main_vis(val_dir)
+    
 def train_model(config):
     train(
         config['epochs'],
