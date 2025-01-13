@@ -41,11 +41,11 @@ def train(
     # Train N2N model
     print("Training N2N model...")
     # Initialize model
-    model, psnr_threshold = N2NNetwork()  ### N2N
+    model= N2NNetwork()  ### N2N
     
     print("PSNR: THRESHOLD",psnr_threshold)
     
-    n2n_model = train_n2n(epochs=n2n_epochs, model=model, dataloader=train_loader)
+    n2n_model, psnr_threshold  = train_n2n(epochs=n2n_epochs, model=model, dataloader=train_loader)
 
     n2n_model.eval()  # Set N2N model to evaluation mode
 
@@ -232,7 +232,7 @@ def train(
                 texture_LOSS = texture_loss_fn(output,clean)
                 
                 # Combined loss
-                loss = mse_loss + 0.05 * contrastive_loss 
+                loss = mse_loss + 0.01 * contrastive_loss 
                 
                 loss.backward()
                 optimizer.step()
