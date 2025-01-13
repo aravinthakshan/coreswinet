@@ -141,4 +141,4 @@ def main_vis(val_dir, model_path="./best_models.pth", use_wandb=True, noise_leve
         wandb.finish()
 
 if __name__ == '__main__':
-    main_vis(val_dir='/path/to/CBSD68/dataset')
+    main_vis(val_dir='/kaggle/input/bsd-400/BSD_400/BSD400_noisy_25')
