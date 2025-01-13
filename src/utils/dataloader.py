@@ -138,7 +138,7 @@ def get_training_augmentation():
 class BSD400(Dataset):
     def __init__(self, root_dir, noise_level=25, crop_size=256, num_crops=32, normalize=True, tanfi=True):
         self.root_dir = root_dir
-        self.noise_level = noise_level
+        self.noise_level = f"{noise_level}"
         self.crop_size = crop_size
         self.num_crops = num_crops
         self.normalize = normalize
