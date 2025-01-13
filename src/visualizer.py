@@ -105,7 +105,7 @@ def main_vis(val_dir, model_path="./best_model.pth", use_wandb=True,
     psnr_metric = torchmetrics.image.PeakSignalNoiseRatio().to(device)
     ssim_metric = torchmetrics.image.StructuralSimilarityIndexMeasure().to(device)
     
-    selected_indices = [10, 20] 
+    selected_indices = [10, 12] ## change this back
     
     all_stats = []
     for i, (noise, clean) in enumerate(dataloader):
