@@ -72,11 +72,7 @@ def get_statistics(noise, clean, output, idx, wb=True):
             print(f"{key.capitalize()}: {value:.4f}")
         
         if wb:
-            print("BEFORE: ")
-            print(np_data)
             np_data = np.clip(np_data.transpose(1, 2, 0), 0, 1) * 255
-            print(f"{suffix}_{idx}")
-            print(np_data)
             rgb_data = np_data.astype(np.uint8)
             image = wandb.Image(rgb_data, caption=f"{suffix}_{idx}.png")
             examples.append(image)
@@ -84,8 +80,6 @@ def get_statistics(noise, clean, output, idx, wb=True):
     if wb and examples:
         wandb.log({"examples": examples})
         print(f"Images for index {idx} saved in wandb")
-        
-        
     
 
 
@@ -129,12 +123,10 @@ def main_vis(val_dir, model_path="./best_models.pth", use_wandb=True, noise_leve
         
         with torch.no_grad():
             output_n2n = n2n_model(noise)
-            print(output_n2n)
             output_main,_,_ = main_model(noise, output_n2n)
-            print(output_main)
         
-        # psnr_main, ssim_main = get_metrics(clean, output_main, psnr_metric, ssim_metric)
-        # print(f"\nImage {i} - Main Model: PSNR: {psnr_main:.4f}, SSIM: {ssim_main:.4f}")
+        psnr_main, ssim_main = get_metrics(clean, output_main, psnr_metric, ssim_metric)
+        print(f"\nImage {i} - Main Model: PSNR: {psnr_main:.4f}, SSIM: {ssim_main:.4f}")
         
         stats_main = get_statistics(noise[0], clean[0], output_main[0], i, wb=use_wandb)
         # stats_n2n = get_statistics(noise[0], clean[0], output_n2n[0], i, wb=use_wandb)
