@@ -30,7 +30,7 @@ def visualize_epoch(model, n2n_model, val_loader, device, epoch, wandb_debug=Tru
                     'noisy_input': noise[j],
                     'ground_truth': un_tan_fi(clean[j]),
                     'model_output': un_tan_fi(output[j]),
-                    'n2n_output':n2n_output
+                    'n2n_output':n2n_output[j]
                 }
                 
                 # Convert to numpy and prepare for wandb
