@@ -103,13 +103,13 @@ def train(
             for itr, batch_data in enumerate(loader):
                 noise, clean = [x.to(device) for x in batch_data]
                 
-                if use_n2n:
+                
                     # Get N2N denoised output
-                    with torch.no_grad():
-                        n2n_output = n2n_model.denoise(noise)
-                else:
-                    # Skip N2N model and use noisy image directly
-                    n2n_output = noise
+                with torch.no_grad():
+                    n2n_output = n2n_model.denoise(noise)
+                # else:
+                #     # Skip N2N model and use noisy image directly
+                #     n2n_output = noise
                 
                 optimizer.zero_grad()
                 
@@ -118,11 +118,11 @@ def train(
                 
                 # Calculate losses, just mse
                 mse_loss = mse_criterion(output, clean)
-                # contrastive_loss = contrastive_loss_fn(f1, f2)
+                contrastive_loss = contrastive_loss_fn(f1, f2)
                 # texture_LOSS = texture_loss_fn(output, clean)
                 
                 # Combined loss
-                loss = mse_loss
+                loss = mse_loss + contrastive_loss*0.001
                 
                 loss.backward()
                 optimizer.step()
