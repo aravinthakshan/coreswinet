@@ -12,7 +12,7 @@ from visualizer import main_vis
 from utils.soap_optimizer import SOAP
 from utils.model.archs.ZSN2N import train_n2n, N2NNetwork
 from utils.loss import ContrastiveLoss, TextureLoss
-
+import os 
 def train(
     epochs,
     batch_size,
@@ -89,7 +89,9 @@ def train(
     }
     # Initialize the flag to use the N2N model
     use_n2n = True
-
+    # Ensure the directories exist
+    os.makedirs('./main_model', exist_ok=True)
+    os.makedirs('./n2n_model', exist_ok=True)
     # Training loop
     for epoch in range(epochs):
         model.train()
