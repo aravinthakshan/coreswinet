@@ -3,7 +3,7 @@ import torch
 import numpy as np
 import wandb 
 import torchmetrics.image
-from utils.dataloader import BSD400 
+from utils.dataloader import CBSD68Dataset 
 from torch.utils.data import DataLoader
 from utils.model.plsworkmodel import Model  
 from utils.model.archs.ZSN2N import N2NNetwork
@@ -60,11 +60,9 @@ def get_statistics(noise, clean, output, idx, wb=True):
             data = un_tan_fi(data)
         
         np_data = data.cpu().numpy()
+       
         
         
-        print(f"\n{suffix} Statistics:")
-        for key, value in stats[suffix].items():
-            print(f"{key.capitalize()}: {value:.4f}")
         
         if wb:
             np_data = np.clip(np_data.transpose(1, 2, 0), 0, 1) * 255
@@ -77,12 +75,16 @@ def get_statistics(noise, clean, output, idx, wb=True):
             'mean': np_data.mean(),
             'std': np_data.std()
         }
+            print(np_data)
+        print(f"\n{suffix} Statistics:")
+        for key, value in stats[suffix].items():
+            print(f"{key.capitalize()}: {value:.4f}")
+            
     
     if wb and examples:
         wandb.log({"examples": examples})
         print(f"Images for index {idx} saved in wandb")
     
-
 
 
 def main_vis(val_dir, model_path="./best_models.pth", use_wandb=True, noise_level=25, crop_size=256, num_crops=32):
@@ -101,7 +103,7 @@ def main_vis(val_dir, model_path="./best_models.pth", use_wandb=True, noise_leve
     main_model.to(device).eval()
     n2n_model.to(device).eval()
     
-    dataset = BSD400(
+    dataset = CBSD68Dataset(
         root_dir=val_dir, 
         noise_level=noise_level, 
         crop_size=crop_size, 
@@ -142,4 +144,4 @@ def main_vis(val_dir, model_path="./best_models.pth", use_wandb=True, noise_leve
         wandb.finish()
 
 if __name__ == '__main__':
-    main_vis(val_dir='/kaggle/input/bsd-400/BSD_400/BSD400_noisy_25')
+    main_vis(val_dir='/path/to/CBSD68/dataset')
