@@ -1,6 +1,6 @@
 import wandb
 from torch.utils.data import DataLoader
-from utils.misc import get_metrics
+from utils.misc import get_metrics, visualize_epoch
 from utils.model.plsworkmodel import Model
 from utils.dataloader import CBSD68Dataset
 from tqdm import tqdm
@@ -197,6 +197,8 @@ def train(
             
             if wandb_debug:
                 wandb.log(logger)
+                visualize_epoch(model, n2n_model, val_loader, device, epoch, wandb_debug)
+
         
         # Check if max_psnr exceeds threshold
         if max_psnr > psnr_threshold:

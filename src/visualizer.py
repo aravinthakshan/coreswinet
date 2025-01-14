@@ -46,50 +46,52 @@ def get_metrics(clean, output, psnr_metric, ssim_metric):
     return psnr.item(), ssim.item()
 
 def get_statistics(noise, clean, output, idx, wb=True):
-
+    """Calculate and log statistics for images"""
     stats = {}
     examples = []
     
-    for data, suffix in [
-        (noise, 'noisy_input'),
-        (clean, 'ground_truth'),
-        (output, 'model_output')
-    ]:
-        # Reverse tan_fi for ground truth and output
-        if suffix != 'noisy_input':
+    image_data = {
+        'noisy_input': noise,
+        'ground_truth': clean,
+        'model_output': output
+    }
+    
+    for name, data in image_data.items():
+        # Apply un_tan_fi for ground truth and output
+        if name != 'noisy_input':
             data = un_tan_fi(data)
         
         np_data = data.cpu().numpy()
-        stats[suffix] = {
+        stats[name] = {
             'min': np_data.min(),
             'max': np_data.max(),
             'mean': np_data.mean(),
             'std': np_data.std()
         }
         
-        print(f"\n{suffix} Statistics:")
-        for key, value in stats[suffix].items():
+        print(f"\n{name} Statistics:")
+        for key, value in stats[name].items():
             print(f"{key.capitalize()}: {value:.4f}")
         
         if wb:
             np_data = np.clip(np_data.transpose(1, 2, 0), 0, 1) * 255
             rgb_data = np_data.astype(np.uint8)
-            image = wandb.Image(rgb_data, caption=f"{suffix}_{idx}.png")
+            image = wandb.Image(rgb_data, caption=f"{name}_{idx}")
             examples.append(image)
     
     if wb and examples:
-        wandb.log({"examples": examples})
+        wandb.log({f"examples_idx_{idx}": examples})
         print(f"Images for index {idx} saved in wandb")
     
-
+    return stats
 
 def main_vis(val_dir, model_path="./best_models.pth", use_wandb=True, noise_level=25, crop_size=256, num_crops=32):
-    """Main visualization function."""
+    """Main visualization function"""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
     
     if use_wandb:
-        wandb.init(project="image-denoising", config={
+        wandb.init(project="DeFInet", config={
             "noise_level": noise_level,
             "crop_size": crop_size,
             "num_crops": num_crops
@@ -112,29 +114,29 @@ def main_vis(val_dir, model_path="./best_models.pth", use_wandb=True, noise_leve
     psnr_metric = torchmetrics.image.PeakSignalNoiseRatio().to(device)
     ssim_metric = torchmetrics.image.StructuralSimilarityIndexMeasure().to(device)
     
-    selected_indices = [10, 20]  
-    
-    all_stats = []
+    # Process first 5 images instead of hardcoded indices
     for i, (noise, clean) in enumerate(dataloader):
-        if i not in selected_indices:
-            continue
-        
+        if i >= 5:  # Limit to first 5 images
+            break
+            
         noise, clean = noise.to(device), clean.to(device)
         
         with torch.no_grad():
             output_n2n = n2n_model(noise)
-            output_main,_,_ = main_model(noise, output_n2n)
+            output_main, _, _ = main_model(noise, output_n2n)
         
         psnr_main, ssim_main = get_metrics(clean, output_main, psnr_metric, ssim_metric)
         print(f"\nImage {i} - Main Model: PSNR: {psnr_main:.4f}, SSIM: {ssim_main:.4f}")
         
-        stats_main = get_statistics(noise[0], clean[0], output_main[0], i, wb=use_wandb)
-        # stats_n2n = get_statistics(noise[0], clean[0], output_n2n[0], i, wb=use_wandb)
+        # Log statistics and visualizations
+        stats = get_statistics(noise[0], clean[0], output_main[0], i, wb=use_wandb)
         
-        all_stats.append({
-            "main_model": stats_main,
-            # "n2n_model": stats_n2n
-        })
+        if use_wandb:
+            wandb.log({
+                f"image_{i}_psnr": psnr_main,
+                f"image_{i}_ssim": ssim_main,
+                f"image_{i}_stats": stats
+            })
     
     if use_wandb:
         wandb.finish()
