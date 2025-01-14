@@ -3,11 +3,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 import segmentation_models_pytorch as smp
 from torchsummary import summary
-from utils.model.archs.SwinBlocks import SwinTransformerBlock
-from utils.model.archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
-from utils.model.archs.ZSN2N import N2NNetwork
-# from archs.SwinBlocks import SwinTransformerBlock
-# from archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
+# from utils.model.archs.SwinBlocks import SwinTransformerBlock
+# from utils.model.archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
+# from utils.model.archs.ZSN2N import N2NNetwork
+from archs.SwinBlocks import SwinTransformerBlock
+from archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
 
 class PReLUBlock(nn.Module):
     def __init__(self, channels):
@@ -141,15 +141,35 @@ class Model(nn.Module):
             return output, f1, f2
         return output
 
+# if __name__ == "__main__":
+#     model = Model(in_channels=3)
+#     batch_size = 2
+#     dummy_input = torch.randn(batch_size, 3, 256, 256)
+#     dummy_n2n = torch.randn(batch_size, 3, 256, 256)  # Simulated N2N output
+#     output = model(dummy_input, dummy_n2n)
+
+#     if isinstance(output, tuple):
+#         print(f"Output shape: {output[0].shape}")
+#         print(f"Contrastive feature shapes: {output[1].shape}, {output[2].shape}")
+#     else:
+#         print(f"Output shape: {output.shape}")
+#     # Print model summary
+#     print("\nModel Summary:")
+#     summary(model, [(3, 256, 256), (3, 256, 256)])  
+
 if __name__ == "__main__":
     model = Model(in_channels=3)
     batch_size = 2
-    dummy_input = torch.randn(batch_size, 3, 256, 256)
-    dummy_n2n = torch.randn(batch_size, 3, 256, 256)  # Simulated N2N output
-    output = model(dummy_input, dummy_n2n)
+    dummy_input1 = torch.randn(batch_size, 3, 256, 256)
+    dummy_input2 = torch.randn(batch_size, 3, 256, 256)
+    output = model(dummy_input1, dummy_input2)
 
     if isinstance(output, tuple):
         print(f"Output shape: {output[0].shape}")
         print(f"Contrastive feature shapes: {output[1].shape}, {output[2].shape}")
     else:
         print(f"Output shape: {output.shape}")
+
+    # Print model summary
+    print("\nModel Summary:")
+    summary(model, [(3, 256, 256), (3, 256, 256)])  # Specify both input shapes
