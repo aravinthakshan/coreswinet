@@ -7,30 +7,30 @@ from utils.dataloader import CBSD68Dataset
 from torch.utils.data import DataLoader
 from utils.model.plsworkmodel import Model  
 from utils.model.archs.ZSN2N import N2NNetwork
-
-def load_models(model_path, device):
-    """Loads the main model and n2n model from a checkpoint."""
-    checkpoint = torch.load(model_path, map_location=device)
+def load_models(main_model_path, n2n_model_path, device):
+    """Loads the main model and n2n model from separate checkpoints."""
     
-    main_model = Model()  
-    main_model_dict = main_model.state_dict()
+    # Load main model checkpoint
+    main_checkpoint = torch.load(main_model_path, map_location=device)
+    main_model = Model()  # Initialize main model
+    main_model.load_state_dict(main_checkpoint['model_state_dict'])
+    print(f"Loaded main model state dict from {main_model_path}.")
     
-    main_pretrained_dict = {k: v for k, v in checkpoint['main_model'].items()
-                            if k in main_model_dict and v.shape == main_model_dict[k].shape}
-    main_model_dict.update(main_pretrained_dict)
-    main_model.load_state_dict(main_model_dict, strict=False)
-    print(f"Loaded {len(main_pretrained_dict)} / {len(main_model_dict)} layers into main model")
+    # Load n2n model checkpoint
+    n2n_checkpoint = torch.load(n2n_model_path, map_location=device)
+    n2n_model = N2NNetwork()  # Initialize n2n model
+    n2n_model.load_state_dict(n2n_checkpoint['model_state_dict'])
+    print(f"Loaded n2n model state dict from {n2n_model_path}.")
     
-    n2n_model = N2NNetwork() 
-    n2n_model_dict = n2n_model.state_dict()
+    # Optionally, return the other saved values (e.g., max_ssim, max_psnr, epoch)
+    max_ssim = main_checkpoint['max_ssim']  # Or use n2n_checkpoint, if you prefer
+    max_psnr = main_checkpoint['max_psnr']
+    epoch = main_checkpoint['epoch']
     
-    n2n_pretrained_dict = {k: v for k, v in checkpoint['n2n_model'].items()
-                           if k in n2n_model_dict and v.shape == n2n_model_dict[k].shape}
-    n2n_model_dict.update(n2n_pretrained_dict)
-    n2n_model.load_state_dict(n2n_model_dict, strict=False)
-    print(f"Loaded {len(n2n_pretrained_dict)} / {len(n2n_model_dict)} layers into n2n model")
+    print(f"Loaded max_ssim: {max_ssim}, max_psnr: {max_psnr}, epoch: {epoch}.")
     
     return main_model, n2n_model
+
 
 def un_tan_fi(data):
     d = data.clone()
@@ -80,7 +80,7 @@ def get_statistics(noise, clean, output, idx, suffix='', wb=True):
     
     return stats
 
-def main_vis(val_dir, model_path="./best_models.pth", use_wandb=True, noise_level=25, crop_size=256, num_crops=32):
+def main_vis(val_dir, use_wandb=True, noise_level=25, crop_size=256, num_crops=32):
     """Main visualization function."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
@@ -92,7 +92,12 @@ def main_vis(val_dir, model_path="./best_models.pth", use_wandb=True, noise_leve
             "num_crops": num_crops
         })
     
-    main_model, n2n_model = load_models(model_path, device)
+    main_model, n2n_model = load_models(
+    './main_model/best_model.pth', 
+    './n2n_model/best_model_n2n.pth', 
+    device
+)
+
     main_model.to(device).eval()
     n2n_model.to(device).eval()
     

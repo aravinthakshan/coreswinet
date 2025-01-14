@@ -186,10 +186,24 @@ def train(
                 logger['max_psnr'] = max_psnr
                 logger['best_epoch'] = epoch + 1
                 # Save both models
+                    # Save main model in a specific directory
                 torch.save({
-                    'main_model': model.state_dict(),
-                    'n2n_model': n2n_model.state_dict()
-                }, './best_models.pth')
+                    'epoch': epoch,
+                    'model_state_dict': model.state_dict(),
+                    'max_ssim': max_ssim,
+                    'max_psnr': max_psnr,
+                }, './main_model/best_model.pth')
+                print(f"Saved main model at epoch {epoch}.")
+                
+                # Save n2n model in a specific directory
+                torch.save({
+                    'epoch': epoch,
+                    'model_state_dict': n2n_model.state_dict(),
+                    'max_ssim': max_ssim,
+                    'max_psnr': max_psnr,
+                }, './n2n_model/best_model_n2n.pth')
+                
+                print(f"Saved n2n model at epoch {epoch}.")
                 print(f"Saved Models at epoch {epoch}.")
                 
             print(f"\nVal PSNR: {psnr_val:.4f}")
@@ -318,44 +332,3 @@ def train_model(config):
         config['lr'],
     )
     
-# def test(test_dir, model_path, device='cuda'):
-#     """Test the model on a test dataset"""
-#     test_dataset = CBSD68Dataset(root_dir=test_dir, noise_level=25, crop_size=256, num_crops=1, normalize=True)
-#     test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
-    
-#     main_model = Model(in_channels=3, contrastive=False).to(device)
-#     n2n_model = N2NNetwork().to(device)
-    
-#     # Load saved weights
-#     checkpoint = torch.load(model_path)
-#     main_model.load_state_dict(checkpoint['main_model'])
-#     n2n_model.load_state_dict(checkpoint['n2n_model'])
-    
-#     main_model.eval()
-#     n2n_model.eval()
-    
-#     # Initialize metrics
-#     p = torchmetrics.image.PeakSignalNoiseRatio().to(device)
-#     z = torchmetrics.image.StructuralSimilarityIndexMeasure().to(device)
-    
-#     total_psnr = 0
-#     total_ssim = 0
-    
-#     with torch.no_grad():
-#         for batch_data in tqdm(test_loader, desc="Testing Progress"):
-#             noise, clean = [x.to(device) for x in batch_data]
-#             n2n_output = n2n_model.denoise(noise)
-#             output, _, _ = main_model(noise, n2n_output)
-            
-#             psnr_val, ssim_val = get_metrics(clean, output, p, z)
-#             total_psnr += psnr_val
-#             total_ssim += ssim_val
-    
-#     avg_psnr = total_psnr / len(test_loader)
-#     avg_ssim = total_ssim / len(test_loader)
-    
-#     print(f"Test Results:")
-#     print(f"Average PSNR: {avg_psnr:.4f}")
-#     print(f"Average SSIM: {avg_ssim:.4f}")
-    
-#     return avg_psnr, avg_ssim
