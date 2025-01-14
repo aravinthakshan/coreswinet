@@ -62,9 +62,7 @@ def get_statistics(noise, clean, output, idx, wb=True):
         np_data = data.cpu().numpy()
        
         
-        print(f"\n{suffix} Statistics:")
-        for key, value in stats[suffix].items():
-            print(f"{key.capitalize()}: {value:.4f}")
+
         
         if wb:
             np_data = np.clip(np_data.transpose(1, 2, 0), 0, 1) * 255
@@ -77,7 +75,9 @@ def get_statistics(noise, clean, output, idx, wb=True):
             'mean': np_data.mean(),
             'std': np_data.std()
         }
-    
+        print(f"\n{suffix} Statistics:")
+        for key, value in stats[suffix].items():
+            print(f"{key.capitalize()}: {value:.4f}")
     if wb and examples:
         wandb.log({"examples": examples})
         print(f"Images for index {idx} saved in wandb")
