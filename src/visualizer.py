@@ -60,12 +60,7 @@ def get_statistics(noise, clean, output, idx, wb=True):
             data = un_tan_fi(data)
         
         np_data = data.cpu().numpy()
-        stats[suffix] = {
-            'min': np_data.min(),
-            'max': np_data.max(),
-            'mean': np_data.mean(),
-            'std': np_data.std()
-        }
+        
         
         print(f"\n{suffix} Statistics:")
         for key, value in stats[suffix].items():
@@ -76,6 +71,12 @@ def get_statistics(noise, clean, output, idx, wb=True):
             rgb_data = np_data.astype(np.uint8)
             image = wandb.Image(rgb_data, caption=f"{suffix}_{idx}.png")
             examples.append(image)
+            stats[suffix] = {
+            'min': np_data.min(),
+            'max': np_data.max(),
+            'mean': np_data.mean(),
+            'std': np_data.std()
+        }
     
     if wb and examples:
         wandb.log({"examples": examples})
