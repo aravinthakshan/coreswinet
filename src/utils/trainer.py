@@ -103,26 +103,26 @@ def train(
             for itr, batch_data in enumerate(loader):
                 noise, clean = [x.to(device) for x in batch_data]
                 
-                
+                if use_n2n:
                     # Get N2N denoised output
-                with torch.no_grad():
-                    n2n_output = n2n_model.denoise(noise)
-                # else:
-                #     # Skip N2N model and use noisy image directly
-                #     n2n_output = noise
+                    with torch.no_grad():
+                        n2n_output = n2n_model.denoise(noise)
+                else:
+                    # Skip N2N model and use noisy image directly
+                    n2n_output = noise
                 
                 optimizer.zero_grad()
                 
                 # Forward pass with both noisy and N2N denoised input
                 output, f1, f2 = model(noise, n2n_output)
                 
-                # Calculate losses, just mse
+                # Calculate losses
                 mse_loss = mse_criterion(output, clean)
                 contrastive_loss = contrastive_loss_fn(f1, f2)
                 # texture_LOSS = texture_loss_fn(output, clean)
                 
                 # Combined loss
-                loss = mse_loss + contrastive_loss*0.001
+                loss = mse_loss + 0.01*contrastive_loss
                 
                 loss.backward()
                 optimizer.step()
@@ -162,10 +162,10 @@ def train(
                 for batch_data in loader:
                     noise, clean = [x.to(device) for x in batch_data]
                     
-                    
-                    n2n_output = n2n_model.denoise(noise)
-                    # else:
-                    # n2n_output = noise
+                    if use_n2n:
+                        n2n_output = n2n_model.denoise(noise)
+                    else:
+                        n2n_output = noise
                     
                     output, _, _ = model(noise, n2n_output)
                     psnr_val_itr, ssim_val_itr = get_metrics(clean, output, psnr_metric, ssim_metric)
@@ -196,9 +196,8 @@ def train(
             print(f"Val SSIM: {ssim_val:.4f}")
             
             if wandb_debug:
-                wandb.log(logger)
                 visualize_epoch(model, n2n_model, val_loader, device, epoch, wandb_debug)
-
+                wandb.log(logger)
         
         # Check if max_psnr exceeds threshold
         if max_psnr > psnr_threshold:
