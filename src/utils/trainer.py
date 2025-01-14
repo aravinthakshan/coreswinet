@@ -116,7 +116,7 @@ def train(
                 # Forward pass with both noisy and N2N denoised input
                 output, f1, f2 = model(noise, n2n_output)
                 
-                # Calculate losses
+                # Calculate losses, just mse
                 mse_loss = mse_criterion(output, clean)
                 # contrastive_loss = contrastive_loss_fn(f1, f2)
                 # texture_LOSS = texture_loss_fn(output, clean)
