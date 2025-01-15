@@ -50,7 +50,6 @@ def get_metrics(clean, output, psnr_metric, ssim_metric,n2n = False):
     return psnr.item(), ssim.item()
 
 
-
 def get_statistics(noise, clean, output, idx, suffix='',n2n = False, wb=True):
     stats = {}
     examples = []
