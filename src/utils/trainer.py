@@ -1,6 +1,6 @@
 import wandb
 from torch.utils.data import DataLoader
-from utils.misc import get_metrics
+from utils.misc import get_metrics, visualize_epoch
 from utils.model.plsworkmodel import Model
 from utils.dataloader import CBSD68Dataset
 from tqdm import tqdm
@@ -12,7 +12,7 @@ from visualizer import main_vis
 from utils.soap_optimizer import SOAP
 from utils.model.archs.ZSN2N import train_n2n, N2NNetwork
 from utils.loss import ContrastiveLoss, TextureLoss
-
+import os 
 def train(
     epochs,
     batch_size,
@@ -89,7 +89,11 @@ def train(
     }
     # Initialize the flag to use the N2N model
     use_n2n = True
-
+    
+    # Ensure the directories exist
+    os.makedirs('./main_model', exist_ok=True)
+    os.makedirs('./n2n_model', exist_ok=True)
+    
     # Training loop
     for epoch in range(epochs):
         model.train()
@@ -103,10 +107,13 @@ def train(
             for itr, batch_data in enumerate(loader):
                 noise, clean = [x.to(device) for x in batch_data]
                 
-
+                if use_n2n:
                     # Get N2N denoised output
-                with torch.no_grad():
-                    n2n_output = n2n_model.denoise(noise)
+                    with torch.no_grad():
+                        n2n_output = n2n_model.denoise(noise)
+                else:
+                    # Skip N2N model and use noisy image directly
+                    n2n_output = noise
                 
                 optimizer.zero_grad()
                 
@@ -159,8 +166,10 @@ def train(
                 for batch_data in loader:
                     noise, clean = [x.to(device) for x in batch_data]
                     
-                    
-                    n2n_output = n2n_model.denoise(noise)
+                    if use_n2n:
+                        n2n_output = n2n_model.denoise(noise)
+                    else:
+                        n2n_output = noise
                     
                     output, _, _ = model(noise, n2n_output)
                     psnr_val_itr, ssim_val_itr = get_metrics(clean, output, psnr_metric, ssim_metric)
@@ -181,23 +190,38 @@ def train(
                 logger['max_psnr'] = max_psnr
                 logger['best_epoch'] = epoch + 1
                 # Save both models
+                    # Save main model in a specific directory
                 torch.save({
-                    'main_model': model.state_dict(),
-                    'n2n_model': n2n_model.state_dict()
-                }, './best_models.pth')
+                    'epoch': epoch,
+                    'model_state_dict': model.state_dict(),
+                    'max_ssim': max_ssim,
+                    'max_psnr': max_psnr,
+                }, './main_model/best_model.pth')
+                print(f"Saved main model at epoch {epoch}.")
+                
+                # Save n2n model in a specific directory
+                torch.save({
+                    'epoch': epoch,
+                    'model_state_dict': n2n_model.state_dict(),
+                    'max_ssim': max_ssim,
+                    'max_psnr': max_psnr,
+                }, './n2n_model/best_model_n2n.pth')
+                
+                print(f"Saved n2n model at epoch {epoch}.")
                 print(f"Saved Models at epoch {epoch}.")
                 
             print(f"\nVal PSNR: {psnr_val:.4f}")
             print(f"Val SSIM: {ssim_val:.4f}")
             
             if wandb_debug:
+                visualize_epoch(model, n2n_model, val_loader, device, epoch, wandb_debug)
                 wandb.log(logger)
         
         # Check if max_psnr exceeds threshold
         if max_psnr > psnr_threshold:
             print(f"PSNR threshold exceeded at epoch {epoch + 1}. Disabling N2N model.")
             use_n2n = False
-        
+
     main_vis(val_dir)
 
     # # Training loop
@@ -312,44 +336,3 @@ def train_model(config):
         config['lr'],
     )
     
-# def test(test_dir, model_path, device='cuda'):
-#     """Test the model on a test dataset"""
-#     test_dataset = CBSD68Dataset(root_dir=test_dir, noise_level=25, crop_size=256, num_crops=1, normalize=True)
-#     test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
-    
-#     main_model = Model(in_channels=3, contrastive=False).to(device)
-#     n2n_model = N2NNetwork().to(device)
-    
-#     # Load saved weights
-#     checkpoint = torch.load(model_path)
-#     main_model.load_state_dict(checkpoint['main_model'])
-#     n2n_model.load_state_dict(checkpoint['n2n_model'])
-    
-#     main_model.eval()
-#     n2n_model.eval()
-    
-#     # Initialize metrics
-#     p = torchmetrics.image.PeakSignalNoiseRatio().to(device)
-#     z = torchmetrics.image.StructuralSimilarityIndexMeasure().to(device)
-    
-#     total_psnr = 0
-#     total_ssim = 0
-    
-#     with torch.no_grad():
-#         for batch_data in tqdm(test_loader, desc="Testing Progress"):
-#             noise, clean = [x.to(device) for x in batch_data]
-#             n2n_output = n2n_model.denoise(noise)
-#             output, _, _ = main_model(noise, n2n_output)
-            
-#             psnr_val, ssim_val = get_metrics(clean, output, p, z)
-#             total_psnr += psnr_val
-#             total_ssim += ssim_val
-    
-#     avg_psnr = total_psnr / len(test_loader)
-#     avg_ssim = total_ssim / len(test_loader)
-    
-#     print(f"Test Results:")
-#     print(f"Average PSNR: {avg_psnr:.4f}")
-#     print(f"Average SSIM: {avg_ssim:.4f}")
-    
-#     return avg_psnr, avg_ssim
