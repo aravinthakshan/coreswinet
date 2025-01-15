@@ -153,21 +153,13 @@ def main_vis(test_dir, use_wandb=True, noise_level=25, crop_size=256, num_crops=
         stats_main = get_statistics(noise[0], clean[0], output_main[0], i, suffix='_main', wb=use_wandb)
         # stats_n2n = get_statistics(noise[0], clean[0], output_n2n[0], i, suffix='_n2n', wb=use_wandb,n2n=True)
         
-        if use_wandb:
-            wandb.log({
-                f"image_{i}/main_psnr": psnr_main,
-                f"image_{i}/main_ssim": ssim_main,
-                # f"image_{i}/n2n_psnr": psnr_n2n,
-                # f"image_{i}/n2n_ssim": ssim_n2n
-            })
-        
+
         all_stats.append({
             "main_model": stats_main,
             # "n2n_model": stats_n2n
         })
     
-    if use_wandb:
-        wandb.finish()
+
 
 if __name__ == '__main__':
     main_vis(test_dir='/path/to/CBSD68/dataset')
