@@ -56,8 +56,8 @@ def test(
     dataset = CBSD68Dataset(
         root_dir=test_dir, 
         noise_level=25, 
-        crop_size=crop_size, 
-        num_crops=num_crops,
+        crop_size=256, 
+        num_crops=34,
         normalize=True,
         tanfi=True 
     )
