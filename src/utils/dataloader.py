@@ -225,7 +225,7 @@ class Waterloo(Dataset):
         self.tanfi = tanfi
 
         self.original_dir = os.path.join(root_dir, "WaterlooED_noisy_0")
-        self.noisy_dir = os.path.join(root_dir, "WaterlooED_noisy_"+self.noise_level)
+        self.noisy_dir = os.path.join(root_dir, "WaterlooED_"+self.noise_level)
 
         self.image_paths = [fname for fname in os.listdir(self.original_dir) if fname.endswith('.bmp')]
 
