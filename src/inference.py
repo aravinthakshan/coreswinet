@@ -10,7 +10,7 @@ from utils.dataloader import CBSD68Dataset
 from torch.utils.data import DataLoader, Subset
 import torchmetrics
 from tqdm import tqdm
-from utils.misc import get_metrics, replace_activations_with_relu
+from utils.misc import get_metrics
 from visualizer import load_models
 import wandb 
 
@@ -35,83 +35,83 @@ def test(
     use_wandb = True
       # New parameter to control when to enable bypass
 ):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Using device: {device}")
+#     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#     print(f"Using device: {device}")
     
-    if use_wandb:
-        wandb.init(project="image-denoising", config={
-            "noise_level": noise_level,
-            "crop_size": crop_size,
-            "num_crops": num_crops
-        })
+#     if use_wandb:
+#         wandb.init(project="image-denoising", config={
+#             "noise_level": noise_level,
+#             "crop_size": crop_size,
+#             "num_crops": num_crops
+#         })
     
-    main_model, n2n_model = load_models(
-    './main_model/best_model.pth', 
-    './n2n_model/best_model_n2n.pth', 
-    device
-)
+#     main_model, n2n_model = load_models(
+#     './main_model/best_model.pth', 
+#     './n2n_model/best_model_n2n.pth', 
+#     device
+# )
 
-    main_model.to(device).eval()
-    n2n_model.to(device).eval()
+#     main_model.to(device).eval()
+#     n2n_model.to(device).eval()
     
-    main_model.bypass = True 
-    print("Main Model Bypass ! ")
+#     main_model.bypass = True 
+#     print("Main Model Bypass ! ")
     
-    dataset = CBSD68Dataset(
-        root_dir=val_dir, 
-        noise_level=noise_level, 
-        crop_size=crop_size, 
-        num_crops=num_crops,
-        normalize=True,
-        tanfi=True 
-    )
-    dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
+#     dataset = CBSD68Dataset(
+#         root_dir=val_dir, 
+#         noise_level=noise_level, 
+#         crop_size=crop_size, 
+#         num_crops=num_crops,
+#         normalize=True,
+#         tanfi=True 
+#     )
+#     dataloader = DataLoader(dataset, batch_size=1, shuffle=False)
     
-    psnr_metric = torchmetrics.image.PeakSignalNoiseRatio().to(device)
-    ssim_metric = torchmetrics.image.StructuralSimilarityIndexMeasure().to(device)
+#     psnr_metric = torchmetrics.image.PeakSignalNoiseRatio().to(device)
+#     ssim_metric = torchmetrics.image.StructuralSimilarityIndexMeasure().to(device)
     
-    selected_indices = [10, 20]  
+#     selected_indices = [10, 20]  
     
-    all_stats = []
-    for i, (noise, clean) in enumerate(dataloader):
-        if i not in selected_indices:
-            continue
+#     all_stats = []
+#     for i, (noise, clean) in enumerate(dataloader):
+#         if i not in selected_indices:
+#             continue
         
-        noise, clean = noise.to(device), clean.to(device)
+#         noise, clean = noise.to(device), clean.to(device)
         
-        with torch.no_grad():
-        #    output_n2n = n2n_model.denoise(noise)
-            output_n2n = un_tan_fi(clean)
-            output_main, _, _ = main_model(noise, output_n2n)
+#         with torch.no_grad():
+#         #    output_n2n = n2n_model.denoise(noise)
+#             output_n2n = un_tan_fi(clean)
+#             output_main, _, _ = main_model(noise, output_n2n)
         
-        # Get metrics for both models
-        psnr_main, ssim_main = get_metrics(clean, output_main, psnr_metric, ssim_metric)
-        # psnr_n2n, ssim_n2n = get_metrics(clean, output_n2n, psnr_metric, ssim_metric,n2n=True)
+#         # Get metrics for both models
+#         psnr_main, ssim_main = get_metrics(clean, output_main, psnr_metric, ssim_metric)
+#         # psnr_n2n, ssim_n2n = get_metrics(clean, output_n2n, psnr_metric, ssim_metric,n2n=True)
         
-        print(f"\nImage {i}:")
-        print(f"Main Model - PSNR: {psnr_main:.4f}, SSIM: {ssim_main:.4f}")
-        # print(f"N2N Model  - PSNR: {psnr_n2n:.4f}, SSIM: {ssim_n2n:.4f}")
+#         print(f"\nImage {i}:")
+#         print(f"Main Model - PSNR: {psnr_main:.4f}, SSIM: {ssim_main:.4f}")
+#         # print(f"N2N Model  - PSNR: {psnr_n2n:.4f}, SSIM: {ssim_n2n:.4f}")
         
-        # Get statistics for both models with different suffixes
-        stats_main = get_statistics(noise[0], clean[0], output_main[0], i, suffix='_main', wb=use_wandb)
-        # stats_n2n = get_statistics(noise[0], clean[0], output_n2n[0], i, suffix='_n2n', wb=use_wandb,n2n=True)
+#         # Get statistics for both models with different suffixes
+#         stats_main = get_statistics(noise[0], clean[0], output_main[0], i, suffix='_main', wb=use_wandb)
+#         # stats_n2n = get_statistics(noise[0], clean[0], output_n2n[0], i, suffix='_n2n', wb=use_wandb,n2n=True)
         
-        if use_wandb:
-            wandb.log({
-                f"image_{i}/main_psnr": psnr_main,
-                f"image_{i}/main_ssim": ssim_main,
-                # f"image_{i}/n2n_psnr": psnr_n2n,
-                # f"image_{i}/n2n_ssim": ssim_n2n
-            })
+#         if use_wandb:
+#             wandb.log({
+#                 f"image_{i}/main_psnr": psnr_main,
+#                 f"image_{i}/main_ssim": ssim_main,
+#                 # f"image_{i}/n2n_psnr": psnr_n2n,
+#                 # f"image_{i}/n2n_ssim": ssim_n2n
+#             })
         
-        all_stats.append({
-            "main_model": stats_main,
-            # "n2n_model": stats_n2n
-        })
+#         all_stats.append({
+#             "main_model": stats_main,
+#             # "n2n_model": stats_n2n
+#         })
     
-    if use_wandb:
-        wandb.finish()
-
+#     if use_wandb:
+#         wandb.finish()
+    pass
     
 def test_model(config):
     test(
