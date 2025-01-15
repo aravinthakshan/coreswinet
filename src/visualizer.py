@@ -96,7 +96,7 @@ def main_vis(test_dir, use_wandb=True, noise_level=25, crop_size=256, num_crops=
     print(f"Using device: {device}")
     
     if use_wandb:
-        wandb.init(project="image-denoising", config={
+        wandb.init(project="DeFInet", config={
             "noise_level": noise_level,
             "crop_size": crop_size,
             "num_crops": num_crops

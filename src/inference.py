@@ -20,22 +20,20 @@ def un_tan_fi(data):
     d /= 2
     return d
 
-
 def test(
     batch_size,
     test_dir,
-    noise_level = 25,
-    crop_size = 256, 
-    num_crops = 34,
+    noise_level=25,
+    crop_size=256, 
+    num_crops=34,
     device='cuda',
-    use_wandb=True, 
-
+    use_wandb=True,
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
     
     if use_wandb:
-        wandb.init(project="image-denoising", config={
+        wandb.init(project="DeFInet", config={
             "noise_level": noise_level,
             "crop_size": crop_size,
             "num_crops": num_crops
@@ -55,44 +53,48 @@ def test(
     
     dataset = CBSD68Dataset(
         root_dir=test_dir, 
-        noise_level=25, 
-        crop_size=256, 
+        noise_level=25,
+        crop_size=256,
         num_crops=34,
         normalize=True,
         tanfi=True 
     )
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, drop_last=True)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
     
     psnr_metric = torchmetrics.image.PeakSignalNoiseRatio().to(device)
     ssim_metric = torchmetrics.image.StructuralSimilarityIndexMeasure().to(device)
     
+    # Reset metrics at start
+    psnr_metric.reset()
+    ssim_metric.reset()
+    
     # Initialize running averages
     total_psnr = 0
     total_ssim = 0
-    num_images = 0
+    num_batches = 0
     
-    for noise, clean in dataloader:
-        noise, clean = noise.to(device), clean.to(device)
-        
-        with torch.no_grad():
-            output_n2n = un_tan_fi(clean)
-            output_main, _, _ = main_model(noise, output_n2n)
-        
-        # Calculate metrics for main model
-        psnr_main, ssim_main = get_metrics(clean, output_main, psnr_metric, ssim_metric)
-        
-        # Update running averages
-        total_psnr += psnr_main * clean.size(0)  # Multiply by batch size
-        total_ssim += ssim_main * clean.size(0)
-        num_images += clean.size(0)
-        
-        # Print progress
-        if num_images % 100 == 0:
-            print(f"Processed {num_images} images...")
+    with tqdm(dataloader, desc="Testing Progress") as loader:
+        for noise, clean in loader:
+            noise, clean = noise.to(device), clean.to(device)
+            
+            with torch.no_grad():
+                output_n2n = un_tan_fi(clean)
+                output_main, _, _ = main_model(noise, output_n2n)
+            
+            # Calculate metrics for main model
+            psnr_main, ssim_main = get_metrics(clean, output_main, psnr_metric, ssim_metric)
+            
+            # Update running averages (per batch, not per image)
+            total_psnr += psnr_main
+            total_ssim += ssim_main
+            num_batches += 1
+            
+            # Update progress bar
+            loader.set_postfix(psnr=psnr_main, ssim=ssim_main)
     
     # Calculate final averages
-    avg_psnr = total_psnr / num_images
-    avg_ssim = total_ssim / num_images
+    avg_psnr = total_psnr / num_batches
+    avg_ssim = total_ssim / num_batches
     
     print(f"\nFinal Results:")
     print(f"Average PSNR TEST: {avg_psnr:.4f}")
