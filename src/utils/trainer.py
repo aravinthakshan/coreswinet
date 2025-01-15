@@ -36,8 +36,8 @@ def train(
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
     bypass_epoch = 10
     
-    print(f"Images per epoch: {len(train_loader) * train_loader.batch_size}")
-
+    print(f"Images per epoch Train: {len(train_loader) * train_loader.batch_size}")
+    print(f"Images per epoch Val: {len(val_loader) * val_loader.batch_size}")
     # Train N2N model
     print("Training N2N model...")
     model = N2NNetwork()  ### N2N
