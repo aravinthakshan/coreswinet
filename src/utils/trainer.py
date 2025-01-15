@@ -22,7 +22,7 @@ def train(
     wandb_debug,
     device='cuda',
     lr=3e-3,
-    n2n_epochs=1000,
+    n2n_epochs=10,
     contrastive_temperature=0.5,
       # New parameter to control when to enable bypass
 ):
