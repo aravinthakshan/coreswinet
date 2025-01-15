@@ -6,7 +6,7 @@ def main(args):
     config={
         'epochs' : args.epochs,
         'train_dir' : args.train_dir,
-        'val_dir' : args.val_dir,
+        'test_dir' : args.test_dir,
         'batch_size' : args.batch_size,
         'device' : args.device,
         'lr' : args.lr,
@@ -33,7 +33,7 @@ if __name__ == '__main__':
     parser.add_argument('--device', type=str, required=False, default='cuda')
     
     parser.add_argument('--train_dir', type=str, required=True)
-    parser.add_argument('--val_dir', type=str, required=True)
+    parser.add_argument('--test_dir', type=str, required=True)
     
     parser.add_argument('--wandbd', type=bool,default=True)
     

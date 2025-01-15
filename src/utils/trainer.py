@@ -2,7 +2,7 @@ import wandb
 from torch.utils.data import DataLoader
 from utils.misc import get_metrics, visualize_epoch, un_tan_fi
 from utils.model.plsworkmodel import Model
-from utils.dataloader import CBSD68Dataset
+from utils.dataloader import CBSD68Dataset, Waterloo
 from tqdm import tqdm
 import torch
 import torch.nn as nn
@@ -18,7 +18,7 @@ def train(
     epochs,
     batch_size,
     train_dir,
-    val_dir,
+    test_dir,
     wandb_debug,
     device='cuda',
     lr=3e-3,
@@ -27,10 +27,11 @@ def train(
       # New parameter to control when to enable bypass
 ):
     # Dataset and dataloaders
-    dataset = CBSD68Dataset(root_dir=train_dir, noise_level=25, crop_size=256, num_crops=34, normalize=True)
+    dataset = Waterloo(root_dir=train_dir, noise_level=25, crop_size=256, num_crops=2, normalize=True)
+    # test_dataset = CBSD68Dataset(root_dir=test_dir, noise_level=25, crop_size=256, num_crops=34, normalize=True)
     train_size = int(0.8 * len(dataset))
-    test_size = len(dataset) - train_size
-    train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
+    val_size = len(dataset) - train_size
+    train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
@@ -228,7 +229,7 @@ def train(
         # if max_psnr > psnr_threshold:
         #     print(f"PSNR threshold exceeded at epoch {epoch + 1}. Disabling N2N model.")
 
-    main_vis(val_dir)
+    main_vis(train_dir)
     
 
 def train_model(config):
