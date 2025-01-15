@@ -67,7 +67,7 @@ class CBSD68Dataset(Dataset):
         self.tanfi = tanfi
 
         self.original_dir = os.path.join(root_dir, "original_png")
-        self.noisy_dir = os.path.join(root_dir, "CBSD_", self.noise_level)
+        self.noisy_dir = os.path.join(root_dir, "CBSD_"+self.noise_level)
 
         self.image_paths = [fname for fname in os.listdir(self.original_dir) if fname.endswith('.png')]
 
