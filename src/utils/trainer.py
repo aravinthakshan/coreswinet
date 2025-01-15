@@ -35,7 +35,7 @@ def train(
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
     
-    bypass_epoch = 70
+    bypass_epoch = 3
     
     print(f"Images per epoch: {len(train_loader) * train_loader.batch_size}")
 
@@ -162,12 +162,17 @@ def train(
         
         # Validation loop
         model.eval()
+        if epoch >= bypass_epoch:
+            model.bypass = True
+        else:
+            model.bypass = False
+            
         with tqdm(val_loader, desc="Validation Progress") as loader:
             psnr_val, ssim_val = 0, 0
             with torch.no_grad():
                 for batch_data in loader:
-                    noise, clean = [x.to(device) for x in batch_data]
-                    
+                    noise, clean = [x.to(device) for x in batch_data]        
+
                     # if use_n2n:
                     #     n2n_output = n2n_model.denoise(noise)
                     # else:
