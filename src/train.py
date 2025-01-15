@@ -1,4 +1,5 @@
 from utils.trainer import train_model
+from inference import test_model
 import argparse
 import wandb
 
@@ -10,7 +11,8 @@ def main(args):
         'batch_size' : args.batch_size,
         'device' : args.device,
         'lr' : args.lr,
-        'wandb': args.wandbd
+        'wandb': args.wandbd,
+        'noise_level': args.noise_level
     }
     if args.wandbd:
         wandb.login(key=args.key)
@@ -18,13 +20,12 @@ def main(args):
             project = "DeFInet",
             config = {
                 "Epochs": args.epochs,
-                # "Dataset": args.dataset_name,
                 "Batch Size": args.batch_size,
                 "Learning Rate": args.lr
             }
         )
     train_model(config)
-
+    test_model(config)
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch_size', type=int, required=False, default=8)
@@ -34,6 +35,7 @@ if __name__ == '__main__':
     
     parser.add_argument('--train_dir', type=str, required=True)
     parser.add_argument('--test_dir', type=str, required=True)
+    parser.add_argument('-noise_level', type=int, required=False, default=25)
     
     parser.add_argument('--wandbd', type=bool,default=True)
     

@@ -135,6 +135,7 @@ class CBSD68Dataset(Dataset):
         axes[1].axis("off")
 
         plt.show()
+        
 class BSD400(Dataset):
     def __init__(self, root_dir, noise_level=25, crop_size=256, num_crops=32, normalize=True, tanfi=True):
         self.root_dir = root_dir
