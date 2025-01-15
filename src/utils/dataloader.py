@@ -60,14 +60,14 @@ def get_training_augmentation():
 class CBSD68Dataset(Dataset):
     def __init__(self, root_dir, noise_level=25, crop_size=256, num_crops=32, normalize=True, tanfi=True):
         self.root_dir = root_dir
-        self.noise_level = f"noisy{noise_level}"
+        self.noise_level = f"noisy_{noise_level}"
         self.crop_size = crop_size
         self.num_crops = num_crops
         self.normalize = normalize
         self.tanfi = tanfi
 
         self.original_dir = os.path.join(root_dir, "original_png")
-        self.noisy_dir = os.path.join(root_dir, self.noise_level)
+        self.noisy_dir = os.path.join(root_dir, "CBSD_", self.noise_level)
 
         self.image_paths = [fname for fname in os.listdir(self.original_dir) if fname.endswith('.png')]
 
