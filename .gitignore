@@ -1,3 +1,4 @@
 # Ignore Python cache files
-pycache/
-src/coregan/model/archs/corefusion
+/src/coregan/model/archs/corefusion
+**/__pycache__/
+**/home/as-aravinthakshan/Desktop/RESEARCH/DeFInet/src/utils/test.ipynb/
