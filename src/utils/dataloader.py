@@ -264,7 +264,7 @@ class Waterloo(Dataset):
     def __len__(self):
         # return 30
         print(len(self.image_pairs))
-        return 50
+        return 100
         # return len(self.image_pairs)
 
     def __getitem__(self, idx):
