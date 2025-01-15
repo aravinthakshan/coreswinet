@@ -13,45 +13,41 @@ from utils.soap_optimizer import SOAP
 from utils.model.archs.ZSN2N import train_n2n, N2NNetwork
 from utils.loss import ContrastiveLoss, TextureLoss
 import os 
+
 def train(
     epochs,
     batch_size,
-    # dataset_name,
     train_dir,
     val_dir,
     wandb_debug,
     device='cuda',
     lr=3e-3,
-    n2n_epochs=1000, #### CHANGE THIS BACK TO 1000
-    contrastive_temperature=0.5
+    n2n_epochs=1000,
+    contrastive_temperature=0.5,
+      # New parameter to control when to enable bypass
 ):
-
-
     # Dataset and dataloaders
     dataset = CBSD68Dataset(root_dir=train_dir, noise_level=25, crop_size=256, num_crops=34, normalize=True)
     train_size = int(0.8 * len(dataset))
     test_size = len(dataset) - train_size
     train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True )
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False,drop_last=True )
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
+    
+    bypass_epoch=70
     
     print(f"Images per epoch: {len(train_loader) * train_loader.batch_size}")
 
     # Train N2N model
     print("Training N2N model...")
-    # Initialize model
-    model= N2NNetwork()  ### N2N
-    
-    
-    n2n_model, psnr_threshold  = train_n2n(epochs=n2n_epochs, model=model, dataloader=train_loader)
+    model = N2NNetwork()  ### N2N
+    n2n_model, psnr_threshold = train_n2n(epochs=n2n_epochs, model=model, dataloader=train_loader)
+    print("PSNR THRESHOLD:", psnr_threshold)
+    n2n_model.eval()
 
-    print("PSNR: THRESHOLD",psnr_threshold)
-
-    n2n_model.eval()  # Set N2N model to evaluation mode
-
-    # Initialize main model
-    model = Model(in_channels=3, contrastive=True).to(device)
+    # Initialize main model with bypass parameter
+    model = Model(in_channels=3, contrastive=True, bypass=False).to(device)
     
     # Optimizer
     optimizer = SOAP(
@@ -67,7 +63,6 @@ def train(
     # Loss functions
     mse_criterion = nn.MSELoss()
     contrastive_loss_fn = ContrastiveLoss(batch_size=batch_size, temperature=contrastive_temperature)
-    # texture_loss_fn = TextureLoss()
     
     # Metrics
     psnr_metric = torchmetrics.image.PeakSignalNoiseRatio().to(device)
@@ -87,15 +82,20 @@ def train(
         'max_psnr': 0,
         'max_ssim': 0,
     }
-    # Initialize the flag to use the N2N model
-    use_n2n = True
     
-    # Ensure the directories exist
+    # use_n2n = True
     os.makedirs('./main_model', exist_ok=True)
     os.makedirs('./n2n_model', exist_ok=True)
     
     # Training loop
     for epoch in range(epochs):
+        # Check if we should enable bypass and disable contrastive loss
+        if epoch >= bypass_epoch:
+            model.bypass = True
+            print(f"\nEpoch {epoch + 1}: Enabling encoder bypass and disabling contrastive loss")
+        else:
+            model.bypass = False
+
         model.train()
         total_loss = []
         psnr_train, ssim_train = 0, 0
@@ -107,26 +107,29 @@ def train(
             for itr, batch_data in enumerate(loader):
                 noise, clean = [x.to(device) for x in batch_data]
                 
-                if use_n2n:
-                    # Get N2N denoised output
-                    with torch.no_grad():
-                        n2n_output = n2n_model.denoise(noise)
-                else:
-                    # Skip N2N model and use noisy image directly
-                    n2n_output = noise
+                # if use_n2n:
+                #     with torch.no_grad():
+                #         n2n_output = n2n_model.denoise(noise)
+                # else:
+                #     n2n_output = noise
+
                 
+                n2n_output = clean # feeding ground truth  
+                                  
                 optimizer.zero_grad()
                 
-                # Forward pass with both noisy and N2N denoised input
+                # Forward pass
                 output, f1, f2 = model(noise, n2n_output)
                 
                 # Calculate losses
-                mse_loss = mse_criterion(output, clean)
-                contrastive_loss = contrastive_loss_fn(f1, f2)
-                # texture_LOSS = texture_loss_fn(output, clean)
+                mse_loss = mse_criterion(output, n2n_output)
                 
-                # Combined loss
-                loss = mse_loss + 0.01*contrastive_loss
+                # Only apply contrastive loss before bypass_epoch
+                if epoch < bypass_epoch:
+                    contrastive_loss = contrastive_loss_fn(f1, f2)
+                    loss = mse_loss + 0.01 * contrastive_loss
+                else:
+                    loss = mse_loss
                 
                 loss.backward()
                 optimizer.step()
@@ -145,7 +148,6 @@ def train(
             ssim_train /= (itr + 1)
             avg_loss = sum(total_loss) / len(total_loss)
             
-            # Update logger
             logger['train_loss'] = avg_loss
             logger['train_psnr'] = psnr_train
             logger['train_ssim'] = ssim_train
@@ -166,11 +168,11 @@ def train(
                 for batch_data in loader:
                     noise, clean = [x.to(device) for x in batch_data]
                     
-                    if use_n2n:
-                        n2n_output = n2n_model.denoise(noise)
-                    else:
-                        n2n_output = noise
-                    
+                    # if use_n2n:
+                    #     n2n_output = n2n_model.denoise(noise)
+                    # else:
+                    #     n2n_output = noise
+                    n2n_output = clean
                     output, _, _ = model(noise, n2n_output)
                     psnr_val_itr, ssim_val_itr = get_metrics(clean, output, psnr_metric, ssim_metric)
                     psnr_val += psnr_val_itr
@@ -183,14 +185,13 @@ def train(
             logger['val_ssim'] = ssim_val
             logger['epoch'] = epoch + 1
             
-            if max_ssim <= ssim_val:
+            if max_psnr <= psnr_val:
                 max_ssim = ssim_val
                 max_psnr = psnr_val
                 logger['max_ssim'] = max_ssim
                 logger['max_psnr'] = max_psnr
                 logger['best_epoch'] = epoch + 1
-                # Save both models
-                    # Save main model in a specific directory
+                
                 torch.save({
                     'epoch': epoch,
                     'model_state_dict': model.state_dict(),
@@ -199,7 +200,6 @@ def train(
                 }, './main_model/best_model.pth')
                 print(f"Saved main model at epoch {epoch}.")
                 
-                # Save n2n model in a specific directory
                 torch.save({
                     'epoch': epoch,
                     'model_state_dict': n2n_model.state_dict(),
@@ -214,16 +214,15 @@ def train(
             print(f"Val SSIM: {ssim_val:.4f}")
             
             if wandb_debug:
-                visualize_epoch(model, n2n_model, val_loader, device, epoch, wandb_debug)
+                # visualize_epoch(model, n2n_model, val_loader, device, epoch, wandb_debug)
                 wandb.log(logger)
         
-        # Check if max_psnr exceeds threshold
-        if max_psnr > psnr_threshold:
-            print(f"PSNR threshold exceeded at epoch {epoch + 1}. Disabling N2N model.")
-            use_n2n = False
+        # # Check if max_psnr exceeds threshold
+        # if max_psnr > psnr_threshold:
+        #     print(f"PSNR threshold exceeded at epoch {epoch + 1}. Disabling N2N model.")
 
     main_vis(val_dir)
-
+    
     # # Training loop
     # for epoch in range(epochs):
     #     model.train()
