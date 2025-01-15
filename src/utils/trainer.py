@@ -34,7 +34,7 @@ def train(
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
-    bypass_epoch = 30
+    bypass_epoch = 10
     
     print(f"Images per epoch: {len(train_loader) * train_loader.batch_size}")
 
@@ -232,11 +232,11 @@ def train(
 
 def train_model(config):
     train(
-        config['epochs'],
-        config['batch_size'],
-        config['train_dir'],
-        config['wandb'],
-        config['device'],
-        config['lr'],
+        epochs=config['epochs'],
+        batch_size=config['batch_size'],
+        train_dir=config['train_dir'],
+        test_dir=config['test_dir'],  
+        wandb_debug=config['wandb'], 
+        device=config['device'],
+        lr=config['lr'],
     )
-    
