@@ -124,7 +124,7 @@ def main_vis(val_dir, use_wandb=True, noise_level=25, crop_size=256, num_crops=3
         noise, clean = noise.to(device), clean.to(device)
         
         with torch.no_grad():
-           output_n2n = n2n_model(noise)
+           output_n2n = n2n_model.denoise(noise)
            output_main, _, _ = main_model(noise, output_n2n)
         
         # Get metrics for both models
