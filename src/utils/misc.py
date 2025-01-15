@@ -9,6 +9,40 @@ def un_tan_fi(data):
     return d
 
 
+def visualize_epoch(model, n2n_model, val_loader, device, epoch, wandb_debug=True):
+    """Visualize results for specific images after each epoch"""
+    model.eval()
+    n2n_model.eval()
+    
+    with torch.no_grad():
+        for i, (noise, clean) in enumerate(val_loader):
+            if i > 0: 
+                break
+                
+            noise, clean = noise.to(device), clean.to(device)
+            
+            n2n_output = n2n_model.denoise(noise)
+            output, _, _ = model(noise, n2n_output)
+            
+            for j in range(min(2, len(noise))):  # Visualize first 2 images from batch
+                images = {
+                    'noisy_input': noise[j],
+                    'ground_truth': un_tan_fi(clean[j]),
+                    'model_output': un_tan_fi(output[j]),
+                    'n2n_output':n2n_output[j]
+                }
+                
+                # Convert to numpy and prepare for wandb
+                wandb_images = {}
+                for name, img in images.items():
+                    np_img = img.cpu().numpy()
+                    np_img = np.clip(np_img.transpose(1, 2, 0), 0, 1) * 255
+                    np_img = np_img.astype(np.uint8)
+                    wandb_images[f"{name}_epoch_{epoch}_img_{j}"] = wandb.Image(np_img)
+                
+                if wandb_debug:
+                    wandb.log(wandb_images, step=epoch)
+                    
 class MultiStepRestartLR(_LRScheduler):
     """ MultiStep with restarts learning rate scheme.
 
