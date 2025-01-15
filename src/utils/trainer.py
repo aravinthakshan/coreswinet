@@ -35,7 +35,7 @@ def train(
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
     
-    bypass_epoch = 3
+    bypass_epoch = 65
     
     print(f"Images per epoch: {len(train_loader) * train_loader.batch_size}")
 
