@@ -127,7 +127,7 @@ def train(
                 # Only apply contrastive loss before bypass_epoch
                 if epoch < bypass_epoch:
                     contrastive_loss = contrastive_loss_fn(f1, f2)
-                    loss = mse_loss + 0.01 * contrastive_loss
+                    loss = mse_loss + 0.05 * contrastive_loss
                 else:
                     loss = mse_loss
                 
@@ -164,6 +164,8 @@ def train(
         model.eval()
         if epoch >= bypass_epoch:
             model.bypass = True
+            max_psnr = 0
+            max_ssim = 0
         else:
             model.bypass = False
             
@@ -189,8 +191,8 @@ def train(
             logger['val_psnr'] = psnr_val
             logger['val_ssim'] = ssim_val
             logger['epoch'] = epoch + 1
-            
-            if max_psnr <= psnr_val:
+
+            if max_psnr <= psnr_val :
                 max_ssim = ssim_val
                 max_psnr = psnr_val
                 logger['max_ssim'] = max_ssim
