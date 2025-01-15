@@ -7,6 +7,7 @@ from utils.dataloader import CBSD68Dataset
 from torch.utils.data import DataLoader
 from utils.model.plsworkmodel import Model  
 from utils.model.archs.ZSN2N import N2NNetwork
+
 def load_models(main_model_path, n2n_model_path, device):
     """Loads the main model and n2n model from separate checkpoints."""
     
@@ -22,7 +23,6 @@ def load_models(main_model_path, n2n_model_path, device):
     n2n_model.load_state_dict(n2n_checkpoint['model_state_dict'])
     print(f"Loaded n2n model state dict from {n2n_model_path}.")
     
-    # Optionally, return the other saved values (e.g., max_ssim, max_psnr, epoch)
     max_ssim = main_checkpoint['max_ssim']  # Or use n2n_checkpoint, if you prefer
     max_psnr = main_checkpoint['max_psnr']
     epoch = main_checkpoint['epoch']
@@ -38,12 +38,20 @@ def un_tan_fi(data):
     d /= 2
     return d
 
-def get_metrics(clean, output, psnr_metric, ssim_metric):
-    psnr = psnr_metric(output, clean)
-    ssim = ssim_metric(output, clean)
+def get_metrics(clean, output, psnr_metric, ssim_metric,n2n = False):
+    
+    if n2n:
+        cln = clean.clone()
+    else:
+        cln = clean
+        
+    psnr = psnr_metric(output, cln)
+    ssim = ssim_metric(output, cln)
     return psnr.item(), ssim.item()
 
-def get_statistics(noise, clean, output, idx, suffix='', wb=True):
+
+
+def get_statistics(noise, clean, output, idx, suffix='',n2n = False, wb=True):
     stats = {}
     examples = []
     
@@ -53,9 +61,12 @@ def get_statistics(noise, clean, output, idx, suffix='', wb=True):
         (output, f'model_output{suffix}')
     ]:
         # Reverse tan_fi for ground truth and output
-        if 'noisy_input' not in data_suffix:
+        if 'noisy_input' not in data_suffix and n2n==False:
             data = un_tan_fi(data)
         
+        if n2n==True and 'ground_truth' in data_suffix:
+            data = un_tan_fi(data)
+            
         np_data = data.cpu().numpy()
         stats[data_suffix] = {
             'min': np_data.min(),
@@ -129,7 +140,7 @@ def main_vis(val_dir, use_wandb=True, noise_level=25, crop_size=256, num_crops=3
         
         # Get metrics for both models
         psnr_main, ssim_main = get_metrics(clean, output_main, psnr_metric, ssim_metric)
-        psnr_n2n, ssim_n2n = get_metrics(clean, output_n2n, psnr_metric, ssim_metric)
+        psnr_n2n, ssim_n2n = get_metrics(clean, output_n2n, psnr_metric, ssim_metric,n2n=True)
         
         print(f"\nImage {i}:")
         print(f"Main Model - PSNR: {psnr_main:.4f}, SSIM: {ssim_main:.4f}")
@@ -137,7 +148,7 @@ def main_vis(val_dir, use_wandb=True, noise_level=25, crop_size=256, num_crops=3
         
         # Get statistics for both models with different suffixes
         stats_main = get_statistics(noise[0], clean[0], output_main[0], i, suffix='_main', wb=use_wandb)
-        stats_n2n = get_statistics(noise[0], clean[0], output_n2n[0], i, suffix='_n2n', wb=use_wandb)
+        stats_n2n = get_statistics(noise[0], clean[0], output_n2n[0], i, suffix='_n2n', wb=use_wandb,n2n=True)
         
         if use_wandb:
             wandb.log({
