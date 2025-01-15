@@ -21,16 +21,10 @@ def un_tan_fi(data):
     return d
 
 
-def tan_fi(data):
-    d = data.clone()
-    d *= 2
-    d -= 1
-    return d
-
 def test(
     batch_size,
     test_dir,
-    noise_level,
+    noise_level = 25,
     crop_size = 256, 
     num_crops = 34,
     device='cuda',
@@ -67,7 +61,7 @@ def test(
         normalize=True,
         tanfi=True 
     )
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
+    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False, drop_last=True)
     
     psnr_metric = torchmetrics.image.PeakSignalNoiseRatio().to(device)
     ssim_metric = torchmetrics.image.StructuralSimilarityIndexMeasure().to(device)
@@ -116,7 +110,8 @@ def test_model(config):
         config['batch_size'],
         config['test_dir'],
         config['wandb'],
-        config['device']
+        config['device'], 
+        config['noise_level']
     )
     
     
