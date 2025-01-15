@@ -90,7 +90,7 @@ def get_statistics(noise, clean, output, idx, suffix='',n2n = False, wb=True):
     
     return stats
 
-def main_vis(val_dir, use_wandb=True, noise_level=25, crop_size=256, num_crops=32):
+def main_vis(test_dir, use_wandb=True, noise_level=25, crop_size=256, num_crops=32):
     """Main visualization function."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
@@ -115,7 +115,7 @@ def main_vis(val_dir, use_wandb=True, noise_level=25, crop_size=256, num_crops=3
     print("Main Model Bypass ! ")
     
     dataset = CBSD68Dataset(
-        root_dir=val_dir, 
+        root_dir=test_dir, 
         noise_level=noise_level, 
         crop_size=crop_size, 
         num_crops=num_crops,
@@ -170,4 +170,4 @@ def main_vis(val_dir, use_wandb=True, noise_level=25, crop_size=256, num_crops=3
         wandb.finish()
 
 if __name__ == '__main__':
-    main_vis(val_dir='/path/to/CBSD68/dataset')
+    main_vis(test_dir='/path/to/CBSD68/dataset')

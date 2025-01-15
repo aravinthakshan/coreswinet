@@ -18,6 +18,7 @@ def train(
     epochs,
     batch_size,
     train_dir,
+    test_dir,
     wandb_debug,
     device='cuda',
     lr=3e-3,
@@ -27,14 +28,12 @@ def train(
 ):
     # Dataset and dataloaders
     dataset = Waterloo(root_dir=train_dir, noise_level=25, crop_size=256, num_crops=2, normalize=True)
-    # test_dataset = CBSD68Dataset(root_dir=test_dir, noise_level=25, crop_size=256, num_crops=34, normalize=True)
     train_size = int(0.8 * len(dataset))
     val_size = len(dataset) - train_size
     train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
-    
     bypass_epoch = 30
     
     print(f"Images per epoch: {len(train_loader) * train_loader.batch_size}")
@@ -228,7 +227,7 @@ def train(
         # if max_psnr > psnr_threshold:
         #     print(f"PSNR threshold exceeded at epoch {epoch + 1}. Disabling N2N model.")
 
-    main_vis(train_dir)
+    main_vis(test_dir)
     
 
 def train_model(config):
