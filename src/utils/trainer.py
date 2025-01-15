@@ -122,7 +122,7 @@ def train(
                 output, f1, f2 = model(noise, n2n_output)
                 
                 # Calculate losses
-                mse_loss = mse_criterion(output, n2n_output)
+                mse_loss = mse_criterion(output, clean)
                 
                 # Only apply contrastive loss before bypass_epoch
                 if epoch < bypass_epoch:
