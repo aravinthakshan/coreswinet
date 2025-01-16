@@ -1,7 +1,7 @@
 import wandb
 from torch.utils.data import DataLoader
 from utils.misc import get_metrics, visualize_epoch, un_tan_fi
-from utils.model.plsworkmodel import Model
+from utils.model.coreswinet import Model
 from utils.dataloader import CBSD68Dataset, Waterloo
 from tqdm import tqdm
 import torch
