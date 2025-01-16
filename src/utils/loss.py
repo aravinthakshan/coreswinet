@@ -15,7 +15,7 @@ import torch.autograd as autograd
 from torch.autograd import Variable
 import numpy as np
 import functools
-
+import torch.nn as nn
 
 class TextureLoss(nn.Module):
     def __init__(self):
@@ -354,9 +354,39 @@ def compute_gradient_penalty(D, real_samples, fake_samples, device):
     gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean()
     return gradient_penalty
 
-import torch
-import torch.nn as nn
 
+class PSNRLoss(nn.Module):
+    def __init__(self, max_val=1.0):
+        """
+        Initialize PSNR loss module
+        Args:
+            max_val (float): Maximum value of the input (default=1.0 for normalized images)
+        """
+        super(PSNRLoss, self).__init__()
+        self.max_val = max_val
+
+    def forward(self, pred, target):
+        """
+        Calculate PSNR loss scaled to approximately match SSIM range
+        Args:
+            pred (torch.Tensor): Predicted images
+            target (torch.Tensor): Target images
+        Returns:
+            torch.Tensor: Scaled PSNR loss
+        """
+        # Calculate MSE
+        mse = torch.mean((pred - target) ** 2, dim=[1, 2, 3])
+        
+        # Calculate PSNR
+        psnr = 20 * torch.log10(self.max_val) - 10 * torch.log10(mse)
+        
+        # Scale PSNR to approximate SSIM range (0-1)
+        # Typical PSNR values are around 20-40 dB, so dividing by 50 maps this to 0.4-0.8
+        scaled_psnr = psnr / 50.0
+        
+        # Return negative for loss minimization
+        return -scaled_psnr.mean()
+    
 class CharbonnierLoss(nn.Module):
     """Charbonnier loss (a differentiable variant of L1Loss).
     
