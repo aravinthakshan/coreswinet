@@ -8,7 +8,7 @@ import torchvision.transforms.functional as TF
 import matplotlib.pyplot as plt
 import numpy as np
 import albumentations as A
-
+from albumentations.pytorch import ToTensorV2
 def tan_fi(data):
     d = data.clone()
     d *= 2
@@ -215,19 +215,38 @@ class BSD400(Dataset):
 
         plt.show()
         
+
 class Waterloo(Dataset):
-    def __init__(self, root_dir, noise_level=25, crop_size=256, num_crops=32, normalize=True, tanfi=True):
+    def __init__(self, root_dir, noise_level=25, crop_size=256, num_crops=32, normalize=True, tanfi=True, augment=True):
         self.root_dir = root_dir
         self.noise_level = f"noisy_{noise_level}"
         self.crop_size = crop_size
         self.num_crops = num_crops
         self.normalize = normalize
         self.tanfi = tanfi
+        self.augment = augment
 
         self.original_dir = os.path.join(root_dir, "WaterlooED_noisy_0")
         self.noisy_dir = os.path.join(root_dir, "WaterlooED_"+self.noise_level)
 
         self.image_paths = [fname for fname in os.listdir(self.original_dir) if fname.endswith('.bmp')]
+        
+        # Define augmentation pipeline based on augment parameter
+        if self.augment:
+            self.transform = A.Compose([
+                A.OneOf([
+                    A.HorizontalFlip(p=0.5),
+                    A.VerticalFlip(p=0.5),
+                    A.Rotate(limit=[90, 90], p=0.5),
+                    A.Rotate(limit=[180, 180], p=0.5),
+                    A.Rotate(limit=[270, 270], p=0.5),
+                ], p=1.0),
+                ToTensorV2()
+            ])
+        else:
+            self.transform = A.Compose([
+                ToTensorV2()
+            ])
 
         self.image_pairs = []
         for img_name in self.image_paths:
@@ -253,31 +272,136 @@ class Waterloo(Dataset):
                 clean_crop = clean_np[top:top + self.crop_size, left:left + self.crop_size]
                 noisy_crop = noisy_np[top:top + self.crop_size, left:left + self.crop_size]
 
-                clean_crop = torch.from_numpy(clean_crop).permute(2, 0, 1)
-                noisy_crop = torch.from_numpy(noisy_crop).permute(2, 0, 1)
+                # Apply same augmentation to both clean and noisy images
+                seed = random.randint(0, 2**32 - 1)
+                
+                random.seed(seed)
+                transformed_clean = self.transform(image=clean_crop)['image']
+                
+                random.seed(seed)
+                transformed_noisy = self.transform(image=noisy_crop)['image']
 
                 if self.tanfi:
-                    clean_crop = tan_fi(clean_crop)
+                    transformed_clean = tan_fi(transformed_clean)
 
-                self.image_pairs.append((noisy_crop, clean_crop))
+                self.image_pairs.append((transformed_noisy, transformed_clean))
 
     def __len__(self):
-        # return 30
-        print(len(self.image_pairs))
-        # return 100
         return len(self.image_pairs)
 
     def __getitem__(self, idx):
-        # return 4
         noisy, clean = self.image_pairs[idx]
         return noisy, clean
-
 
     def visualize(self, idx):
         import matplotlib.pyplot as plt
 
         noisy_crop, clean_crop = self.image_pairs[idx]
+        
+        # Convert back to numpy for visualization
+        noisy_image = noisy_crop.permute(1, 2, 0).numpy()
+        clean_image = clean_crop.permute(1, 2, 0).numpy()
 
+        if self.normalize:
+            noisy_image = (noisy_image * 255).astype(np.uint8)
+            clean_image = (clean_image * 255).astype(np.uint8)
+
+        fig, axes = plt.subplots(1, 2, figsize=(10, 5))
+        axes[0].imshow(clean_image)
+        axes[0].set_title("Clean Crop")
+        axes[0].axis("off")
+
+        axes[1].imshow(noisy_image)
+        axes[1].set_title("Noisy Crop")
+        axes[1].axis("off")
+
+        plt.show()
+
+
+class Waterloo(Dataset):
+    def __init__(self, root_dir, noise_level=25, crop_size=256, num_crops=32, normalize=True, tanfi=True, augment=True):
+        self.root_dir = root_dir
+        self.noise_level = f"noisy_{noise_level}"
+        self.crop_size = crop_size
+        self.num_crops = num_crops
+        self.normalize = normalize
+        self.tanfi = tanfi
+        self.augment = augment
+
+        self.original_dir = os.path.join(root_dir, "WaterlooED_noisy_0")
+        self.noisy_dir = os.path.join(root_dir, "WaterlooED_"+self.noise_level)
+
+        self.image_paths = [fname for fname in os.listdir(self.original_dir) if fname.endswith('.bmp')]
+        
+        # Define augmentation pipeline based on augment parameter
+        if self.augment:
+            self.transform = A.Compose([
+                A.OneOf([
+                    A.HorizontalFlip(p=0.5),
+                    A.VerticalFlip(p=0.5),
+                    A.Rotate(limit=[90, 90], p=0.5),
+                    A.Rotate(limit=[180, 180], p=0.5),
+                    A.Rotate(limit=[270, 270], p=0.5),
+                ], p=1.0),
+                ToTensorV2()
+            ])
+        else:
+            self.transform = A.Compose([
+                ToTensorV2()
+            ])
+
+        self.image_pairs = []
+        for img_name in self.image_paths:
+            clean_path = os.path.join(self.original_dir, img_name)
+            noisy_path = os.path.join(self.noisy_dir, img_name)
+
+            clean_image = Image.open(clean_path).convert("RGB")
+            noisy_image = Image.open(noisy_path).convert("RGB")
+
+            clean_np = np.array(clean_image).astype(np.float32)
+            noisy_np = np.array(noisy_image).astype(np.float32)
+
+            if self.normalize:
+                clean_np /= 255.0
+                noisy_np /= 255.0
+
+            h, w, _ = clean_np.shape
+
+            for _ in range(self.num_crops):
+                top = random.randint(0, h - self.crop_size)
+                left = random.randint(0, w - self.crop_size)
+
+                clean_crop = clean_np[top:top + self.crop_size, left:left + self.crop_size]
+                noisy_crop = noisy_np[top:top + self.crop_size, left:left + self.crop_size]
+
+                # Apply same augmentation to both clean and noisy images
+                seed = 42
+                
+                random.seed(seed)
+                transformed_clean = self.transform(image=clean_crop)['image']
+                
+                random.seed(seed)
+                transformed_noisy = self.transform(image=noisy_crop)['image']
+
+                if self.tanfi:
+                    transformed_clean = tan_fi(transformed_clean)
+
+                self.image_pairs.append((transformed_noisy, transformed_clean))
+
+    def __len__(self):
+        return 100
+        # return len(self.image_pairs)
+
+    def __getitem__(self, idx):
+        noisy, clean = self.image_pairs[idx]
+        return noisy, clean
+
+    def visualize(self, idx):
+        import matplotlib.pyplot as plt
+
+        noisy_crop, clean_crop = self.image_pairs[idx]
+        
+        # Convert back to numpy for visualization
         noisy_image = noisy_crop.permute(1, 2, 0).numpy()
         clean_image = clean_crop.permute(1, 2, 0).numpy()
 
