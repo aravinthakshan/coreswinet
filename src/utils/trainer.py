@@ -133,9 +133,9 @@ def train(
                 # Only apply contrastive loss before bypass_epoch
                 if epoch < bypass_epoch:
                     contrastive_loss = contrastive_loss_fn(f1, f2)
-                    loss = mse_loss + 0.05 * contrastive_loss + texture_loss + psnr_loss
+                    loss = mse_loss + 0.05 * contrastive_loss + texture_loss + psnr_loss *0.1
                 else:
-                    loss = mse_loss + texture_loss + psnr_loss
+                    loss = mse_loss + texture_loss + psnr_loss*0.1
                 
                 loss.backward()
                 optimizer.step()

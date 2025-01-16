@@ -355,37 +355,18 @@ def compute_gradient_penalty(D, real_samples, fake_samples, device):
     return gradient_penalty
 
 
+
 class PSNRLoss(nn.Module):
     def __init__(self, max_val=1.0):
-        """
-        Initialize PSNR loss module
-        Args:
-            max_val (float): Maximum value of the input (default=1.0 for normalized images)
-        """
         super(PSNRLoss, self).__init__()
-        self.max_val =  torch.tensor(max_val) 
+        self.max_val = torch.tensor(max_val) 
 
-    def forward(self, pred, target):
-        """
-        Calculate PSNR loss scaled to approximately match SSIM range
-        Args:
-            pred (torch.Tensor): Predicted images
-            target (torch.Tensor): Target images
-        Returns:
-            torch.Tensor: Scaled PSNR loss
-        """
-        # Calculate MSE
-        mse = torch.mean((pred - target) ** 2, dim=[1, 2, 3])
-        
-        # Calculate PSNR
+    def forward(self, output, target):
+        mse = torch.mean((output - target) ** 2)
         psnr = 20 * torch.log10(self.max_val) - 10 * torch.log10(mse)
-        
-        # Scale PSNR to approximate SSIM range (0-1)
-        # Typical PSNR values are around 20-40 dB, so dividing by 50 maps this to 0.4-0.8
-        scaled_psnr = psnr / 50.0
-        
-        # Return negative for loss minimization
-        return -scaled_psnr.mean()
+        scaled_psnr = psnr / 50  # Optionally scale PSNR to a 0-1 range
+        return 1 - scaled_psnr.mean()  # Return 1 - PSNR
+    
     
 class CharbonnierLoss(nn.Module):
     """Charbonnier loss (a differentiable variant of L1Loss).
