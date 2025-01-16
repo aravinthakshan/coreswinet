@@ -363,7 +363,7 @@ class PSNRLoss(nn.Module):
             max_val (float): Maximum value of the input (default=1.0 for normalized images)
         """
         super(PSNRLoss, self).__init__()
-        self.max_val = max_val
+        self.max_val =  torch.tensor(max_val) 
 
     def forward(self, pred, target):
         """
