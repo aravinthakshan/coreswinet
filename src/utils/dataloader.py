@@ -389,8 +389,8 @@ class Waterloo(Dataset):
                 self.image_pairs.append((transformed_noisy, transformed_clean))
 
     def __len__(self):
-        return 100
-        # return len(self.image_pairs)
+        # return 100
+        return len(self.image_pairs)
 
     def __getitem__(self, idx):
         noisy, clean = self.image_pairs[idx]
