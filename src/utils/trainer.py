@@ -27,7 +27,7 @@ def train(
       # New parameter to control when to enable bypass
 ):
     # Dataset and dataloaders
-    dataset = Waterloo(root_dir=train_dir, noise_level=50, crop_size=256, num_crops=2, normalize=True, augment=True)
+    dataset = Waterloo(root_dir=train_dir, noise_level=25, crop_size=256, num_crops=2, normalize=True, augment=True)
     train_size = int(0.8 * len(dataset))
     val_size = len(dataset) - train_size
     train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
