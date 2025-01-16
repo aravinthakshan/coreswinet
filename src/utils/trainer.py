@@ -125,6 +125,11 @@ def train(
                 mse_loss = mse_criterion(output, clean)
                 texture_loss = texture_loss_fn(output,clean)
                 psnr_loss = psrn_loss_fn(output, clean)
+                
+                print("mse_loss", mse_loss)
+                print("texture_loss", texture_loss)
+                print("psnr_loss", psnr_loss)
+                
                 # Only apply contrastive loss before bypass_epoch
                 if epoch < bypass_epoch:
                     contrastive_loss = contrastive_loss_fn(f1, f2)
