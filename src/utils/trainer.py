@@ -38,12 +38,12 @@ def train(
     
     # Initialize N2N model (unchanged)
     print("Training N2N model...")
-    model = N2NNetwork()
+    n2n_model = N2NNetwork()
     n2n_model, psnr_threshold = train_n2n(epochs=n2n_epochs, model=model, dataloader=train_loader)
     n2n_model.eval()
 
     # Initialize main model and discriminator
-    generator = Model(in_channels=3, contrastive=True, bypass=False).to(device)
+    model = Model(in_channels=3, contrastive=True, bypass=False).to(device)
     discriminator = Discriminator(in_channels=3).to(device)
     
     # Initialize GAN loss
@@ -51,7 +51,7 @@ def train(
     
     # Optimizers
     optimizer_G = SOAP(
-        generator.parameters(),
+        model.parameters(),
         lr=lr,
         betas=(0.95, 0.95),
         weight_decay=0.01,
@@ -102,12 +102,12 @@ def train(
     # Training loop
     for epoch in range(epochs):
         if epoch >= bypass_epoch:
-            generator.bypass = True
+            model.bypass = True
             print(f"\nEpoch {epoch + 1}: Enabling encoder bypass and disabling contrastive loss")
         else:
-            generator.bypass = False
+            model.bypass = False
 
-        generator.train()
+        model.train()
         discriminator.train()
         total_loss = []
         total_g_loss = []
@@ -126,7 +126,7 @@ def train(
                 optimizer_D.zero_grad()
                 
                 # Generate fake images
-                fake_images, _, _ = generator(noise, n2n_output)
+                fake_images, _, _ = model(noise, n2n_output)
                 
                 # Real images loss
                 real_pred = discriminator(clean)
@@ -141,11 +141,11 @@ def train(
                 d_loss.backward()
                 optimizer_D.step()
                 
-                # Train Generator
+                # Train model
                 optimizer_G.zero_grad()
                 
-                # Generate images again for generator update
-                fake_images, f1, f2 = generator(noise, n2n_output)
+                # Generate images again for model update
+                fake_images, f1, f2 = model(noise, n2n_output)
                 fake_pred = discriminator(fake_images)
                 
                 # Calculate losses
