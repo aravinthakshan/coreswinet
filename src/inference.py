@@ -104,7 +104,8 @@ def test(
         wandb.log({
             "avg_psnr_test": avg_psnr,
             "avg_ssim_test": avg_ssim
-        })
+        })  
+
         wandb.finish()
 
 def test_model(config):
