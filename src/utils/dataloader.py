@@ -233,6 +233,38 @@ class Waterloo(Dataset):
 
                 self.image_pairs.append((noisy_crop, clean_crop))
                 
+    def __len__(self):
+        # return 100
+        return len(self.image_pairs)
+
+    def __getitem__(self, idx):
+        noisy, clean = self.image_pairs[idx]
+        return noisy, clean
+
+    def visualize(self, idx):
+        import matplotlib.pyplot as plt
+
+        noisy_crop, clean_crop = self.image_pairs[idx]
+        
+        # Convert back to numpy for visualization
+        noisy_image = noisy_crop.permute(1, 2, 0).numpy()
+        clean_image = clean_crop.permute(1, 2, 0).numpy()
+
+        if self.normalize:
+            noisy_image = (noisy_image * 255).astype(np.uint8)
+            clean_image = (clean_image * 255).astype(np.uint8)
+
+        fig, axes = plt.subplots(1, 2, figsize=(10, 5))
+        axes[0].imshow(clean_image)
+        axes[0].set_title("Clean Crop")
+        axes[0].axis("off")
+
+        axes[1].imshow(noisy_image)
+        axes[1].set_title("Noisy Crop")
+        axes[1].axis("off")
+
+        plt.show()
+                
 
 # Define the augmentation functions
 def get_training_augmentation():
