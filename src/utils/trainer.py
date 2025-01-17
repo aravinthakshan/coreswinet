@@ -39,7 +39,7 @@ def train(
     # Initialize N2N model (unchanged)
     print("Training N2N model...")
     n2n_model = N2NNetwork()
-    n2n_model, psnr_threshold = train_n2n(epochs=n2n_epochs, model=model, dataloader=train_loader)
+    n2n_model, psnr_threshold = train_n2n(epochs=n2n_epochs, model=n2n_model, dataloader=train_loader)
     n2n_model.eval()
 
     # Initialize main model and discriminator
