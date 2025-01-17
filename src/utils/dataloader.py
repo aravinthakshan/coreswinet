@@ -7,7 +7,7 @@ from PIL import Image
 import torchvision.transforms.functional as TF
 import matplotlib.pyplot as plt
 import numpy as np
-import albumentations as A
+import albumentations as albu
 
 def tan_fi(data):
     d = data.clone()
@@ -23,38 +23,6 @@ def tan_fi(data):
     
     return d
 
-def get_training_augmentation():
-    train_transform = [
-        # Geometric transformations that preserve noise characteristics
-        A.HorizontalFlip(p=0.5),
-        A.VerticalFlip(p=0.5),
-        A.RandomRotate90(p=0.5),
-        
-        # # Small color adjustments (subtle to not interfere with noise patterns)
-        # A.ColorJitter(
-        #     brightness=0.1,
-        #     contrast=0.1,
-        #     saturation=0.1,
-        #     hue=0.1,
-        #     p=0.3
-        # ),
-        
-        # # Subtle lighting adjustments
-        # A.RandomBrightnessContrast(
-        #     brightness_limit=0.1,
-        #     contrast_limit=0.1,
-        #     p=0.3
-        # ),
-        
-        # # Channel shuffling can help with robustness
-        # A.ChannelShuffle(p=0.1),
-        
-    ]
-    
-    return A.Compose(
-        train_transform,
-        additional_targets={'image1': 'image'}
-    )
 
 
 class CBSD68Dataset(Dataset):
@@ -215,14 +183,16 @@ class BSD400(Dataset):
 
         plt.show()
         
+        
 class Waterloo(Dataset):
-    def __init__(self, root_dir, noise_level=25, crop_size=256, num_crops=32, normalize=True, tanfi=True):
+    def __init__(self, root_dir, noise_level=25, crop_size=256, num_crops=32, normalize=True, tanfi=True, augmentation=None):
         self.root_dir = root_dir
         self.noise_level = f"noisy_{noise_level}"
         self.crop_size = crop_size
         self.num_crops = num_crops
         self.normalize = normalize
         self.tanfi = tanfi
+        self.augmentation = augmentation
 
         self.original_dir = os.path.join(root_dir, "WaterlooED_noisy_0")
         self.noisy_dir = os.path.join(root_dir, "WaterlooED_"+self.noise_level)
@@ -253,6 +223,11 @@ class Waterloo(Dataset):
                 clean_crop = clean_np[top:top + self.crop_size, left:left + self.crop_size]
                 noisy_crop = noisy_np[top:top + self.crop_size, left:left + self.crop_size]
 
+                # Apply augmentations if specified
+                if self.augmentation:
+                    augmented = self.augmentation(image=noisy_crop, image1=clean_crop)
+                    noisy_crop, clean_crop = augmented['image'], augmented['image1']
+
                 clean_crop = torch.from_numpy(clean_crop).permute(2, 0, 1)
                 noisy_crop = torch.from_numpy(noisy_crop).permute(2, 0, 1)
 
@@ -261,37 +236,12 @@ class Waterloo(Dataset):
 
                 self.image_pairs.append((noisy_crop, clean_crop))
 
-    def __len__(self):
-        # return 30
-        print(len(self.image_pairs))
-        # return 100
-        return len(self.image_pairs)
-
-    def __getitem__(self, idx):
-        # return 4
-        noisy, clean = self.image_pairs[idx]
-        return noisy, clean
-
-
-    def visualize(self, idx):
-        import matplotlib.pyplot as plt
-
-        noisy_crop, clean_crop = self.image_pairs[idx]
-
-        noisy_image = noisy_crop.permute(1, 2, 0).numpy()
-        clean_image = clean_crop.permute(1, 2, 0).numpy()
-
-        if self.normalize:
-            noisy_image = (noisy_image * 255).astype(np.uint8)
-            clean_image = (clean_image * 255).astype(np.uint8)
-
-        fig, axes = plt.subplots(1, 2, figsize=(10, 5))
-        axes[0].imshow(clean_image)
-        axes[0].set_title("Clean Crop")
-        axes[0].axis("off")
-
-        axes[1].imshow(noisy_image)
-        axes[1].set_title("Noisy Crop")
-        axes[1].axis("off")
-
-        plt.show()
+# Define the augmentation functions
+def get_training_augmentation():
+    train_transform = [
+        albu.HorizontalFlip(p=0.5),
+        albu.VerticalFlip(p=0.5),
+        albu.Rotate(limit=[90, 90], p=0.5),
+        albu.Rotate(limit=[270, 270], p=0.5)
+    ]
+    return albu.Compose(train_transform, additional_targets={'image1': 'image'})
