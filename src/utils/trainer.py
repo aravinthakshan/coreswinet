@@ -2,7 +2,7 @@ import wandb
 from torch.utils.data import DataLoader
 from utils.misc import get_metrics, visualize_epoch, un_tan_fi
 from utils.model.coreswinet import Model
-from utils.dataloader import CBSD68Dataset, Waterloo
+from utils.dataloader import CBSD68Dataset, Waterloo, get_training_augmentation
 from tqdm import tqdm
 import torch
 import torch.nn as nn
@@ -27,7 +27,7 @@ def train(
     contrastive_temperature=0.5,
 ):
     # Dataset and dataloaders setup (unchanged)
-    dataset = Waterloo(root_dir=train_dir, noise_level=25, crop_size=256, num_crops=2, normalize=True, augment=True)
+    dataset = Waterloo(root_dir=train_dir, noise_level=25, crop_size=256, num_crops=2, normalize=True, augment=get_training_augmentation())
     train_size = int(0.8 * len(dataset))
     val_size = len(dataset) - train_size
     train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
@@ -47,7 +47,7 @@ def train(
     discriminator = Discriminator(in_channels=3).to(device)
     
     # Initialize GAN loss
-    gan_criterion = GANLoss(gan_type='standard', device=device)
+    gan_criterion = GANLoss(gan_type='lsgan', device=device)
     
     # Optimizers
     optimizer_G = SOAP(
@@ -73,7 +73,7 @@ def train(
     # Loss functions
     mse_criterion = nn.MSELoss()
     contrastive_loss_fn = ContrastiveLoss(batch_size=batch_size, temperature=contrastive_temperature)
-    psrn_loss_fn = PSNRLoss()
+    # psrn_loss_fn = PSNRLoss()
     
     # Metrics
     psnr_metric = torchmetrics.image.PeakSignalNoiseRatio().to(device)
@@ -150,15 +150,15 @@ def train(
                 
                 # Calculate losses
                 mse_loss = mse_criterion(fake_images, clean)
-                psnr_loss = psrn_loss_fn(fake_images, clean)
+                # psnr_loss = psrn_loss_fn(fake_images, clean)
                 g_loss = gan_criterion(fake_pred, True, is_disc=False)
                 
                 # Combine losses
                 if epoch < bypass_epoch:
                     contrastive_loss = contrastive_loss_fn(f1, f2)
-                    loss = mse_loss + 0.05 * contrastive_loss + psnr_loss * 0.01 + 0.1 * g_loss
+                    loss = 2000 * mse_loss + 0.01* contrastive_loss + g_loss
                 else:
-                    loss = mse_loss + psnr_loss * 0.01 + 0.1 * g_loss
+                    loss = 2000* mse_loss + 0.1 * g_loss
                 
                 loss.backward()
                 optimizer_G.step()

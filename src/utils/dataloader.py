@@ -7,8 +7,7 @@ from PIL import Image
 import torchvision.transforms.functional as TF
 import matplotlib.pyplot as plt
 import numpy as np
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
+import albumentations as albu
 def tan_fi(data):
     d = data.clone()
     d *= 2
@@ -233,3 +232,14 @@ class Waterloo(Dataset):
                     clean_crop = tan_fi(clean_crop)
 
                 self.image_pairs.append((noisy_crop, clean_crop))
+                
+
+# Define the augmentation functions
+def get_training_augmentation():
+    train_transform = [
+        albu.HorizontalFlip(p=0.5),
+        albu.VerticalFlip(p=0.5),
+        albu.Rotate(limit=[90, 90], p=0.5),
+        albu.Rotate(limit=[270, 270], p=0.5)
+    ]
+    return albu.Compose(train_transform, additional_targets={'image1': 'image'})
