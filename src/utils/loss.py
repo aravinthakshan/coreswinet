@@ -16,7 +16,17 @@ from torch.autograd import Variable
 import numpy as np
 import functools
 
+class PSNRLoss(nn.Module):
+    def __init__(self, max_val=1.0):
+        super(PSNRLoss, self).__init__()
+        self.max_val = torch.tensor(max_val) 
 
+    def forward(self, output, target):
+        mse = torch.mean((output - target) ** 2)
+        psnr = 20 * torch.log10(self.max_val) - 10 * torch.log10(mse)
+        scaled_psnr = psnr / 50  # Optionally scale PSNR to a 0-1 range
+        return 1 - scaled_psnr.mean()  # Return 1 - PSNR
+    
 class TextureLoss(nn.Module):
     def __init__(self):
         super(TextureLoss, self).__init__()
