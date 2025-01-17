@@ -11,7 +11,7 @@ import torchmetrics.image
 from visualizer import main_vis
 from utils.soap_optimizer import SOAP
 from utils.model.archs.ZSN2N import train_n2n, N2NNetwork
-from utils.model.archs import Discriminator 
+from utils.model.archs.Discriminator import Discriminator 
 from utils.loss import ContrastiveLoss, TextureLoss, PSNRLoss, GANLoss
 import os 
 
