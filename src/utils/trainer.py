@@ -137,7 +137,7 @@ def train(
                 d_fake_loss = gan_criterion(fake_pred, False, is_disc=True)
                 
                 # Combined discriminator loss
-                d_loss = (d_real_loss + d_fake_loss) * 0.5
+                d_loss = d_real_loss + d_fake_loss
                 d_loss.backward()
                 optimizer_D.step()
                 
@@ -156,9 +156,9 @@ def train(
                 # Combine losses
                 if epoch < bypass_epoch:
                     contrastive_loss = contrastive_loss_fn(f1, f2)
-                    loss = 2000 * mse_loss + 0.01* contrastive_loss + g_loss
+                    loss = 2000 * mse_loss + g_loss + 0.01 * contrastive_loss
                 else:
-                    loss = 2000* mse_loss + 0.1 * g_loss
+                    loss = 2000 * mse_loss + g_loss
                 
                 loss.backward()
                 optimizer_G.step()
