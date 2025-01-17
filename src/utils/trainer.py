@@ -11,7 +11,8 @@ import torchmetrics.image
 from visualizer import main_vis
 from utils.soap_optimizer import SOAP
 from utils.model.archs.ZSN2N import train_n2n, N2NNetwork
-from utils.loss import ContrastiveLoss, TextureLoss, PSNRLoss
+from utils.model.archs import Discriminator 
+from utils.loss import ContrastiveLoss, TextureLoss, PSNRLoss, GANLoss
 import os 
 
 def train(
@@ -24,9 +25,8 @@ def train(
     lr=3e-3,
     n2n_epochs=10,
     contrastive_temperature=0.5,
-      # New parameter to control when to enable bypass
 ):
-    # Dataset and dataloaders
+    # Dataset and dataloaders setup (unchanged)
     dataset = Waterloo(root_dir=train_dir, noise_level=25, crop_size=256, num_crops=2, normalize=True, augment=True)
     train_size = int(0.8 * len(dataset))
     val_size = len(dataset) - train_size
@@ -36,22 +36,33 @@ def train(
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
     bypass_epoch = 20
     
-    print(f"Images per epoch Train: {len(train_loader) * train_loader.batch_size}")
-    print(f"Images per epoch Val: {len(val_loader) * val_loader.batch_size}")
-    # Train N2N model
+    # Initialize N2N model (unchanged)
     print("Training N2N model...")
-    model = N2NNetwork()  ### N2N
+    model = N2NNetwork()
     n2n_model, psnr_threshold = train_n2n(epochs=n2n_epochs, model=model, dataloader=train_loader)
-    print("PSNR THRESHOLD:", psnr_threshold)
     n2n_model.eval()
 
-    # Initialize main model with bypass parameter
-    model = Model(in_channels=3, contrastive=True, bypass=False).to(device)
+    # Initialize main model and discriminator
+    generator = Model(in_channels=3, contrastive=True, bypass=False).to(device)
+    discriminator = Discriminator(in_channels=3).to(device)
     
-    # Optimizer
-    optimizer = SOAP(
-        model.parameters(),
+    # Initialize GAN loss
+    gan_criterion = GANLoss(gan_type='standard', device=device)
+    
+    # Optimizers
+    optimizer_G = SOAP(
+        generator.parameters(),
         lr=lr,
+        betas=(0.95, 0.95),
+        weight_decay=0.01,
+        precondition_frequency=10,
+        merge_dims=True,
+        normalize_grads=True
+    )
+    
+    optimizer_D = SOAP(
+        discriminator.parameters(),
+        lr=lr * 0.5,  # Generally discriminator learns faster, so lower learning rate
         betas=(0.95, 0.95),
         weight_decay=0.01,
         precondition_frequency=10,
@@ -62,13 +73,13 @@ def train(
     # Loss functions
     mse_criterion = nn.MSELoss()
     contrastive_loss_fn = ContrastiveLoss(batch_size=batch_size, temperature=contrastive_temperature)
-    # texture_loss_fn = TextureLoss()
     psrn_loss_fn = PSNRLoss()
+    
     # Metrics
     psnr_metric = torchmetrics.image.PeakSignalNoiseRatio().to(device)
     ssim_metric = torchmetrics.image.StructuralSimilarityIndexMeasure().to(device)
     
-    # Logger and tracking
+    # Logger initialization (unchanged)
     max_ssim = 0
     max_psnr = 0
     logger = {
@@ -81,23 +92,26 @@ def train(
         'best_epoch': 0,
         'max_psnr': 0,
         'max_ssim': 0,
+        'g_loss': 0,
+        'd_loss': 0,
     }
     
-    # use_n2n = True
     os.makedirs('./main_model', exist_ok=True)
     os.makedirs('./n2n_model', exist_ok=True)
     
     # Training loop
     for epoch in range(epochs):
-        # Check if we should enable bypass and disable contrastive loss
         if epoch >= bypass_epoch:
-            model.bypass = True
+            generator.bypass = True
             print(f"\nEpoch {epoch + 1}: Enabling encoder bypass and disabling contrastive loss")
         else:
-            model.bypass = False
+            generator.bypass = False
 
-        model.train()
+        generator.train()
+        discriminator.train()
         total_loss = []
+        total_g_loss = []
+        total_d_loss = []
         psnr_train, ssim_train = 0, 0
         
         psnr_metric.reset()
@@ -106,69 +120,84 @@ def train(
         with tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs} - Training Progress") as loader:
             for itr, batch_data in enumerate(loader):
                 noise, clean = [x.to(device) for x in batch_data]
+                n2n_output = un_tan_fi(clean)
                 
-                # if use_n2n:
-                #     with torch.no_grad():
-                #         n2n_output = n2n_model.denoise(noise)
-                # else:
-                #     n2n_output = noise
-
+                # Train Discriminator
+                optimizer_D.zero_grad()
                 
-                n2n_output = un_tan_fi(clean)# feeding ground truth  
-                                  
-                optimizer.zero_grad()
+                # Generate fake images
+                fake_images, _, _ = generator(noise, n2n_output)
                 
-                # Forward pass
-                output, f1, f2 = model(noise, n2n_output)
+                # Real images loss
+                real_pred = discriminator(clean)
+                d_real_loss = gan_criterion(real_pred, True, is_disc=True)
+                
+                # Fake images loss
+                fake_pred = discriminator(fake_images.detach())
+                d_fake_loss = gan_criterion(fake_pred, False, is_disc=True)
+                
+                # Combined discriminator loss
+                d_loss = (d_real_loss + d_fake_loss) * 0.5
+                d_loss.backward()
+                optimizer_D.step()
+                
+                # Train Generator
+                optimizer_G.zero_grad()
+                
+                # Generate images again for generator update
+                fake_images, f1, f2 = generator(noise, n2n_output)
+                fake_pred = discriminator(fake_images)
                 
                 # Calculate losses
-                mse_loss = mse_criterion(output, clean)
-                # texture_loss = texture_loss_fn(output,clean)
-                psnr_loss = psrn_loss_fn(output, clean)
+                mse_loss = mse_criterion(fake_images, clean)
+                psnr_loss = psrn_loss_fn(fake_images, clean)
+                g_loss = gan_criterion(fake_pred, True, is_disc=False)
                 
-                # print("mse_loss", mse_loss)
-                # print("texture_loss", texture_loss)
-                # print("psnr_loss", psnr_loss)
-                
-                # Only apply contrastive loss before bypass_epoch
+                # Combine losses
                 if epoch < bypass_epoch:
-                    contrastive_loss = contrastive_loss_fn(f1, f2) 
-                    # print("contrastive_loss", contrastive_loss)
-                    loss = mse_loss + 0.05 * contrastive_loss + psnr_loss * 0.01
+                    contrastive_loss = contrastive_loss_fn(f1, f2)
+                    loss = mse_loss + 0.05 * contrastive_loss + psnr_loss * 0.01 + 0.1 * g_loss
                 else:
-                    loss = mse_loss + psnr_loss * 0.01
+                    loss = mse_loss + psnr_loss * 0.01 + 0.1 * g_loss
                 
                 loss.backward()
-                optimizer.step()
+                optimizer_G.step()
                 
                 # Calculate metrics
-                psnr_train_itr, ssim_train_itr = get_metrics(clean, output, psnr_metric, ssim_metric)
+                psnr_train_itr, ssim_train_itr = get_metrics(clean, fake_images, psnr_metric, ssim_metric)
                 
                 total_loss.append(loss.item())
+                total_g_loss.append(g_loss.item())
+                total_d_loss.append(d_loss.item())
                 psnr_train += psnr_train_itr
                 ssim_train += ssim_train_itr
                 
-                loader.set_postfix(loss=loss.item(), psnr=psnr_train_itr, ssim=ssim_train_itr)
+                loader.set_postfix(
+                    loss=loss.item(),
+                    g_loss=g_loss.item(),
+                    d_loss=d_loss.item(),
+                    psnr=psnr_train_itr,
+                    ssim=ssim_train_itr
+                )
             
             # Average metrics
             psnr_train /= (itr + 1)
             ssim_train /= (itr + 1)
             avg_loss = sum(total_loss) / len(total_loss)
+            avg_g_loss = sum(total_g_loss) / len(total_g_loss)
+            avg_d_loss = sum(total_d_loss) / len(total_d_loss)
             
-            logger['train_loss'] = avg_loss
-            logger['train_psnr'] = psnr_train
-            logger['train_ssim'] = ssim_train
+            logger.update({
+                'train_loss': avg_loss,
+                'train_psnr': psnr_train,
+                'train_ssim': ssim_train,
+                'g_loss': avg_g_loss,
+                'd_loss': avg_d_loss,
+            })
             
-            print(f'\nEpoch {epoch + 1}/{epochs}')
-            print(f'TRAIN Loss: {avg_loss:.4f}')
-            print(f'TRAIN PSNR: {psnr_train:.4f}')
-            print(f'TRAIN SSIM: {ssim_train:.4f}')
-            
-            psnr_metric.reset()
-            ssim_metric.reset()
-        
-        # Validation loop
+                    # Validation loop
         model.eval()
+        
         if epoch >= bypass_epoch:
             model.bypass = True
             max_psnr = 0
@@ -228,13 +257,8 @@ def train(
             print(f"Val SSIM: {ssim_val:.4f}")
             
             if wandb_debug:
-                # visualize_epoch(model, n2n_model, val_loader, device, epoch, wandb_debug)
                 wandb.log(logger)
-        
-        # # Check if max_psnr exceeds threshold
-        # if max_psnr > psnr_threshold:
-        #     print(f"PSNR threshold exceeded at epoch {epoch + 1}. Disabling N2N model.")
-
+    
     main_vis(test_dir)
     
 
