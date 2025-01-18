@@ -130,7 +130,7 @@ def train(
                     contrastive_loss = contrastive_loss_fn(f1, f2)
                     loss = mse_loss + 0.05 * contrastive_loss +  0.1 * psnr_loss
                 else:
-                    loss = mse_loss +  0.5 * psnr_loss + 0.1 * texture_loss
+                    loss = mse_loss +  0.5 * psnr_loss #  + 0.1 * texture_loss
                 
                 loss.backward()
                 optimizer.step()
