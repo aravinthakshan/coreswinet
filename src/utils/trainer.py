@@ -26,8 +26,10 @@ def train(
     contrastive_temperature=0.5,
       # New parameter to control when to enable bypass
 ):
+    print("Staring Dataloding")
     # Dataset and dataloaders
     dataset = Waterloo(root_dir=train_dir, noise_level=25, crop_size=256, num_crops=2, normalize=True,augmentation=get_training_augmentation())
+    print("Ending Dataloding")
 
     train_size = int(0.8 * len(dataset))
     val_size = len(dataset) - train_size
@@ -36,7 +38,7 @@ def train(
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
     bypass_epoch = 30
-    
+    print("Start Model Training")
     model = Model()  # Your model
     trained_model, final_psnr = train_one_shot (
     epochs=5000,
