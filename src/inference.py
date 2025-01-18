@@ -78,7 +78,7 @@ def test(
             noise, clean = noise.to(device), clean.to(device)
             
             with torch.no_grad():
-                output_n2n = un_tan_fi(clean)
+                output_n2n = n2n_model(noise)
                 output_main, _, _ = main_model(noise, output_n2n)
             
             # Calculate metrics for main model

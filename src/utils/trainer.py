@@ -24,7 +24,7 @@ def train(
     wandb_debug,
     device='cuda',
     lr=3e-3,
-    n2n_epochs=10,
+    n2n_epochs=1000,
     contrastive_temperature=0.5,
 ):
     # Dataset and dataloaders setup
@@ -51,7 +51,7 @@ def train(
     discriminator = ConditionalDiscriminator(in_channels=3).to(device)
     
     # Initialize GAN loss
-    gan_criterion = GANLoss(gan_type='standard', device=device)
+    gan_criterion = GANLoss(gan_type='lsgan', device=device)
     
     # Optimizers
     optimizer_G = SOAP(
@@ -147,7 +147,8 @@ def train(
                 fake_pred = discriminator(fake_images.detach(), condition)
                 d_fake_loss = gan_criterion(fake_pred, False, is_disc=True)
                 
-                d_loss = (d_real_loss + d_fake_loss) * 0.5
+                d_loss = d_real_loss + d_fake_loss
+                
                 d_loss.backward()
                 optimizer_D.step()
                 
@@ -158,14 +159,14 @@ def train(
                 fake_pred = discriminator(fake_images, condition)
                 
                 mse_loss = mse_criterion(fake_images, clean)
-                psnr_loss = psrn_loss_fn(fake_images, clean)
+                
                 g_loss = gan_criterion(fake_pred, True, is_disc=False)
                 
                 if epoch < bypass_epoch:
                     contrastive_loss = contrastive_loss_fn(f1, f2)
-                    loss = mse_loss + 0.05 * contrastive_loss # + psnr_loss * 0.01 + 0.1 * g_loss
+                    loss = 2000 * mse_loss + 0.05 * contrastive_loss +  g_loss
                 else:
-                    loss = mse_loss + psnr_loss * 0.01 + 0.1 * g_loss
+                    loss = 20000 * mse_loss  +  g_loss
                 
                 loss.backward()
                 optimizer_G.step()
@@ -233,7 +234,7 @@ def train(
                     
                     # Get N2N noise estimation
                     noise_estimation = n2n_model(noise)
-                    condition = noise - noise_estimation
+                    condition = noise_estimation
                     
                     # Generate fake images
                     fake_images, _, _ = model(noise, condition)
