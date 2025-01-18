@@ -2,7 +2,7 @@ import wandb
 from torch.utils.data import DataLoader
 from utils.misc import get_metrics, visualize_epoch, un_tan_fi
 from utils.model.coreswinet import Model
-from utils.dataloader import CBSD68Dataset, Waterloo
+from utils.dataloader import CBSD68Dataset, Waterloo, get_training_augmentation
 from tqdm import tqdm
 import torch
 import torch.nn as nn
@@ -28,7 +28,7 @@ def train(
     contrastive_temperature=0.5,
 ):
     # Dataset and dataloaders setup
-    dataset = Waterloo(root_dir=train_dir, noise_level=25, crop_size=256, num_crops=2, normalize=True, augment=True)
+    dataset = Waterloo(root_dir=train_dir, noise_level=25, crop_size=256, num_crops=2, normalize=True, augmentation=get_training_augmentation())
     train_size = int(0.8 * len(dataset))
     val_size = len(dataset) - train_size
     train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
