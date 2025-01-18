@@ -46,8 +46,8 @@ def train(
     n2n_model, psnr_threshold = train_n2n(epochs=n2n_epochs, model=n2n_model, dataloader=train_loader)
     n2n_model.eval()
 
-    # Initialize generator and conditional discriminator
-    generator = Model(in_channels=3, contrastive=True, bypass=False).to(device)
+    # Initialize model and conditional discriminator
+    model = Model(in_channels=3, contrastive=True, bypass=False).to(device)
     discriminator = ConditionalDiscriminator(in_channels=3).to(device)
     
     # Initialize GAN loss
@@ -55,7 +55,7 @@ def train(
     
     # Optimizers
     optimizer_G = SOAP(
-        generator.parameters(),
+        model.parameters(),
         lr=lr,
         betas=(0.95, 0.95),
         weight_decay=0.01,
@@ -109,13 +109,13 @@ def train(
     # Training loop
     for epoch in range(epochs):
         if epoch >= bypass_epoch:
-            generator.bypass = True
+            model.bypass = True
             print(f"\nEpoch {epoch + 1}: Enabling encoder bypass and disabling contrastive loss")
         else:
-            generator.bypass = False
+            model.bypass = False
 
         # Training phase
-        generator.train()
+        model.train()
         discriminator.train()
         n2n_model.eval()
         
@@ -134,12 +134,12 @@ def train(
                 # Get N2N noise estimation as condition
                 with torch.no_grad():
                     noise_estimation = n2n_model(noise)
-                    condition = noise - noise_estimation
+                    condition = noise_estimation
                 
                 # Train Discriminator
                 optimizer_D.zero_grad()
                 
-                fake_images, f1, f2 = generator(noise, condition)
+                fake_images, f1, f2 = model(noise, condition)
                 
                 real_pred = discriminator(clean, condition)
                 d_real_loss = gan_criterion(real_pred, True, is_disc=True)
@@ -151,10 +151,10 @@ def train(
                 d_loss.backward()
                 optimizer_D.step()
                 
-                # Train Generator
+                # Train model
                 optimizer_G.zero_grad()
                 
-                fake_images, f1, f2 = generator(noise, condition)
+                fake_images, f1, f2 = model(noise, condition)
                 fake_pred = discriminator(fake_images, condition)
                 
                 mse_loss = mse_criterion(fake_images, clean)
@@ -210,18 +210,18 @@ def train(
             print(f'TRAIN SSIM: {ssim_train:.4f}')
         
         # Validation phase
-        generator.eval()
+        model.eval()
         discriminator.eval()
         
         psnr_metric.reset()
         ssim_metric.reset()
         
         if epoch >= bypass_epoch:
-            generator.bypass = True
+            model.bypass = True
             max_psnr = 0
             max_ssim = 0
         else:
-            generator.bypass = False
+            model.bypass = False
             
         with tqdm(val_loader, desc="Validation Progress") as loader:
             psnr_val, ssim_val = 0, 0
@@ -236,7 +236,7 @@ def train(
                     condition = noise - noise_estimation
                     
                     # Generate fake images
-                    fake_images, _, _ = generator(noise, condition)
+                    fake_images, _, _ = model(noise, condition)
                     
                     # Calculate GAN losses
                     real_pred = discriminator(clean, condition)
@@ -278,10 +278,10 @@ def train(
                     'best_epoch': epoch + 1
                 })
                 
-                # Save generator (main model)
+                # Save model (main model)
                 torch.save({
                     'epoch': epoch,
-                    'model_state_dict': generator.state_dict(),
+                    'model_state_dict': model.state_dict(),
                     'optimizer_state_dict': optimizer_G.state_dict(),
                     'max_ssim': max_ssim,
                     'max_psnr': max_psnr,
