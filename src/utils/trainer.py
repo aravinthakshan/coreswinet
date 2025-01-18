@@ -34,7 +34,7 @@ def train(
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
-    bypass_epoch = 20
+    bypass_epoch = 30
     
     print(f"Images per epoch Train: {len(train_loader) * train_loader.batch_size}")
     print(f"Images per epoch Val: {len(val_loader) * val_loader.batch_size}")
@@ -62,7 +62,8 @@ def train(
     # Loss functions
     mse_criterion = nn.MSELoss()
     contrastive_loss_fn = ContrastiveLoss(batch_size=batch_size, temperature=contrastive_temperature)
-    # psnr_loss_func = PSNRLoss()
+    psnr_loss_func = PSNRLoss()
+    texture_loss_func = TextureLoss()
     # Metrics
     psnr_metric = torchmetrics.image.PeakSignalNoiseRatio().to(device)
     ssim_metric = torchmetrics.image.StructuralSimilarityIndexMeasure().to(device)
@@ -122,13 +123,14 @@ def train(
                 
                 # Calculate losses
                 mse_loss = mse_criterion(output, clean)
-                # psnr_loss = psnr_loss_func(output,clean)
+                psnr_loss = psnr_loss_func(output,clean)
+                texture_loss = texture_loss_func(output,clean)
                 # Only apply contrastive loss before bypass_epoch
                 if epoch < bypass_epoch:
                     contrastive_loss = contrastive_loss_fn(f1, f2)
-                    loss = mse_loss + 0.1 * contrastive_loss  # +  0.1 * psnr_loss
+                    loss = mse_loss + 0.05 * contrastive_loss +  0.1 * psnr_loss
                 else:
-                    loss = mse_loss 
+                    loss = mse_loss +  0.5 * psnr_loss + 0.1 * texture_loss
                 
                 loss.backward()
                 optimizer.step()
