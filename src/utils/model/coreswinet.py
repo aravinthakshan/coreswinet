@@ -22,6 +22,10 @@ class PReLUBlock(nn.Module):
     def forward(self, x):
         return self.block(x)
     
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
 class Model(nn.Module):
     def __init__(self, in_channels=3):
         super().__init__()
@@ -44,22 +48,19 @@ class Model(nn.Module):
             SwinTransformerBlock(
                 dim=ch, 
                 input_resolution=(256 // (2**i), 256 // (2**i)),
-                num_heads=min(8, max(1, ch // 32)),  # Adaptive number of heads
-                window_size=min(7, max(3, ch // 32)),  # Adaptive window size
+                num_heads=min(8, max(1, ch // 32)),
+                window_size=min(7, max(3, ch // 32)),
                 mlp_ratio=4.0
             ) for i, ch in enumerate(encoder_channels[:-1])
         ])
         
-        # Adaptive channel mapping for each skip connection
         self.skip_adapters = nn.ModuleList([
             nn.Conv2d(ch, ch, kernel_size=1) 
             for ch in encoder_channels[:-1]
         ])
         
-        # Squeeze-and-Excitation Block for Bottleneck
         self.bottleneck_attention = SqueezeExcitationBlock(encoder_channels[-1])
         
-        # Final processing
         self.final = nn.Sequential(
             nn.Conv2d(64, 16, kernel_size=1),
             nn.BatchNorm2d(16),
@@ -76,16 +77,18 @@ class Model(nn.Module):
         
         # Process skip connections with Swin Transformer blocks
         processed_features = []
-        for feat, swin_block, adapter in zip(features[:-1], self.swin_skip_blocks, self.skip_adapters):
-            # Reshape for transformer
+        for i, (feat, swin_block, adapter) in enumerate(zip(features[:-1], self.swin_skip_blocks, self.skip_adapters)):
+            # Get current feature dimensions
             B, C, H, W = feat.shape
-            feat_reshaped = feat.flatten(2).transpose(1, 2)
+            
+            # Reshape for transformer: B, C, H, W -> B, H*W, C
+            feat_reshaped = feat.permute(0, 2, 3, 1).reshape(B, H * W, C)
             
             # Apply Swin Transformer block
             transformed_feat = swin_block(feat_reshaped)
             
-            # Reshape back and apply channel adapter
-            transformed_feat = transformed_feat.transpose(1, 2).reshape(B, C, H, W)
+            # Reshape back: B, H*W, C -> B, C, H, W
+            transformed_feat = transformed_feat.reshape(B, H, W, C).permute(0, 3, 1, 2)
             transformed_feat = adapter(transformed_feat)
             
             processed_features.append(transformed_feat)
@@ -97,8 +100,6 @@ class Model(nn.Module):
         output = self.final(decoder_output)
         
         return output
-
-
 
 # ### ----->>> DO NOT DELETE THIS ( MULTIPLE 1,1,2,2,3 BLOCKS OF SWIN PER RESIDUAL ) <<<----------
 # class Model(nn.Module):

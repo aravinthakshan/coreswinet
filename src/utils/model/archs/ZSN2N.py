@@ -112,7 +112,22 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 from tqdm import tqdm
-
+def compute_psnr(pred, target):
+    """
+    Compute Peak Signal-to-Noise Ratio between prediction and target.
+    
+    Args:
+        pred (torch.Tensor): Predicted image
+        target (torch.Tensor): Target image
+        
+    Returns:
+        float: PSNR value
+    """
+    mse = F.mse_loss(pred, target).item()
+    if mse == 0:  # Handle the case where images are identical
+        return float('inf')
+    max_pixel = 1.0  # assuming images are normalized to [0,1]
+    return 20 * np.log10(max_pixel) - 10 * np.log10(mse)
 def train_one_shot(
     epochs: int,
     model: nn.Module,
@@ -120,10 +135,9 @@ def train_one_shot(
     device: str = 'cuda',
     base_lr: float = 0.0001,
     patience: int = 500,
-) -> nn.Module:
+):
     """
-    Train model on a single image using a one-shot approach with multi-scale consistency
-    and perceptual losses.
+    Train model on a single image with dimension-aware processing
     """
     model = model.to(device)
     
@@ -131,7 +145,6 @@ def train_one_shot(
     noisy_img, clean_img = next(iter(dataloader))
     noisy_img, clean_img = noisy_img.to(device), clean_img.to(device)
     
-    # Setup optimizer with cosine annealing
     optimizer = optim.AdamW(model.parameters(), lr=base_lr)
     scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
         optimizer, 
@@ -140,37 +153,26 @@ def train_one_shot(
     )
 
     def create_image_pyramid(img, scales=[1.0, 0.5, 0.25]):
-        """Create multi-scale image pyramid."""
+        """Create multi-scale image pyramid with dimension tracking"""
         pyramid = []
         for scale in scales:
             if scale != 1.0:
-                size = (int(img.shape[2] * scale), int(img.shape[3] * scale))
-                scaled = F.interpolate(img, size=size, mode='bilinear', align_corners=False)
+                h = max(int(img.shape[2] * scale), 32)  # Ensure minimum size
+                w = max(int(img.shape[3] * scale), 32)
+                scaled = F.interpolate(img, size=(h, w), mode='bilinear', align_corners=False)
             else:
                 scaled = img
             pyramid.append(scaled)
         return pyramid
 
-    def consistency_loss(pred1, pred2):
-        """Compute consistency loss between different scale predictions."""
-        # Resize larger prediction to match smaller one
-        if pred1.shape != pred2.shape:
-            pred1 = F.interpolate(pred1, size=pred2.shape[2:], mode='bilinear', align_corners=False)
-        return F.mse_loss(pred1, pred2)
-
-    def compute_total_variation_loss(x):
-        """Compute total variation loss to encourage spatial smoothness."""
-        tv_h = torch.abs(x[:, :, 1:, :] - x[:, :, :-1, :]).mean()
-        tv_w = torch.abs(x[:, :, :, 1:] - x[:, :, :, :-1]).mean()
-        return (tv_h + tv_w) / 2.0
-
     def loss_func(noisy_img, model):
-        # Create image pyramids
+        # Create image pyramids with proper dimensionality
         noisy_pyramid = create_image_pyramid(noisy_img)
         
         # Get predictions at different scales
         predictions = []
         for scale_img in noisy_pyramid:
+            # Ensure input dimensions are valid for the model
             pred = model(scale_img)
             predictions.append(pred)
         
@@ -180,13 +182,19 @@ def train_one_shot(
         # Multi-scale consistency loss
         cons_loss = 0
         for i in range(len(predictions)-1):
-            cons_loss += consistency_loss(predictions[i], predictions[i+1])
+            # Resize larger prediction to match smaller one
+            scaled_pred = F.interpolate(
+                predictions[i], 
+                size=predictions[i+1].shape[2:], 
+                mode='bilinear', 
+                align_corners=False
+            )
+            cons_loss += F.mse_loss(scaled_pred, predictions[i+1])
         cons_loss /= (len(predictions)-1)
         
-        # Total variation loss for spatial smoothness
+        # Total variation loss
         tv_loss = compute_total_variation_loss(predictions[0])
         
-        # Combine losses
         total_loss = recon_loss + 0.1 * cons_loss + 0.01 * tv_loss
         
         return total_loss, {
@@ -195,52 +203,52 @@ def train_one_shot(
             'tv_loss': tv_loss.item()
         }
 
-    def compute_psnr(pred, target):
-        mse = F.mse_loss(pred, target).item()
-        return 10 * torch.log10(torch.tensor(1.0) / mse)
+    def compute_total_variation_loss(x):
+        tv_h = torch.abs(x[:, :, 1:, :] - x[:, :, :-1, :]).mean()
+        tv_w = torch.abs(x[:, :, :, 1:] - x[:, :, :, :-1]).mean()
+        return (tv_h + tv_w) / 2.0
 
-    # Training loop
+    # Training loop with dimension checks
     model.train()
     best_psnr = 0
     best_state = None
     patience_counter = 0
     
     for epoch in tqdm(range(epochs), desc="Training One-Shot Model"):
-        # Forward pass and loss computation
-        loss, loss_components = loss_func(noisy_img, model)
-        
-        # Backward pass
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-        scheduler.step()
-        
-        # Evaluation and logging
-        if epoch % 100 == 0:
-            with torch.no_grad():
-                pred = model(noisy_img)
-                current_psnr = compute_psnr(pred, clean_img)
+        try:
+            loss, loss_components = loss_func(noisy_img, model)
+            
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            scheduler.step()
+            
+            if epoch % 100 == 0:
+                with torch.no_grad():
+                    pred = model(noisy_img)
+                    current_psnr = compute_psnr(pred, clean_img)
+                    
+                    if current_psnr > best_psnr:
+                        best_psnr = current_psnr
+                        best_state = model.state_dict().copy()
+                        patience_counter = 0
+                    else:
+                        patience_counter += 1
+                    
+                    tqdm.write(
+                        f"Epoch {epoch}, PSNR: {current_psnr:.2f}, "
+                        f"Loss: {loss.item():.4f}"
+                    )
+            
+            if patience_counter >= patience:
+                print(f"Early stopping triggered after {epoch} epochs")
+                break
                 
-                if current_psnr > best_psnr:
-                    best_psnr = current_psnr
-                    best_state = model.state_dict().copy()
-                    patience_counter = 0
-                else:
-                    patience_counter += 1
-                
-                tqdm.write(
-                    f"Epoch {epoch}, PSNR: {current_psnr:.2f}, "
-                    f"Recon Loss: {loss_components['recon_loss']:.4f}, "
-                    f"Cons Loss: {loss_components['cons_loss']:.4f}, "
-                    f"TV Loss: {loss_components['tv_loss']:.4f}"
-                )
-        
-        # Early stopping check
-        if patience_counter >= patience:
-            print(f"Early stopping triggered after {epoch} epochs")
-            break
+        except RuntimeError as e:
+            print(f"Error in epoch {epoch}: {str(e)}")
+            print("Input shapes:", noisy_img.shape)
+            raise e
     
-    # Load best model state
     if best_state is not None:
         model.load_state_dict(best_state)
     
