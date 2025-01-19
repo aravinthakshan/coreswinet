@@ -156,10 +156,10 @@ def train(
                 # Combine losses
                 if epoch < bypass_epoch:
                     contrastive_loss = contrastive_loss_fn(f1, f2)
-                    loss = 2000 * mse_loss + g_loss + 0.01 * contrastive_loss
+                    loss = 2000 * mse_loss + 0.01 * contrastive_loss
                 else:
-                    loss = 2000 * mse_loss 
-                
+                    loss = 2000 * mse_loss  + g_loss 
+                                    
                 loss.backward()
                 optimizer_G.step()
                 
