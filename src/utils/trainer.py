@@ -34,6 +34,7 @@ def train(
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
     bypass_epoch = 20
+    bypass_epoch_second = 50
     
     print(f"Images per epoch Train: {len(train_loader) * train_loader.batch_size}")
     print(f"Images per epoch Val: {len(val_loader) * val_loader.batch_size}")
@@ -103,8 +104,11 @@ def train(
     for epoch in range(epochs):
         # Bypass logic remains the same
         if epoch >= bypass_epoch:
-            model.bypass = True
-            print(f"\nEpoch {epoch + 1}: Enabling encoder bypass and disabling contrastive loss")
+            model.bypass_first = True
+            print(f"\nEpoch {epoch + 1}: Enabling first bypass and disabling contrastive loss")
+        elif epoch>=bypass_epoch_second:
+            model.bypass_second = False
+            print(f"\nEpoch {epoch + 1}: Your code sucks ass aravinth")
         else:
             model.bypass = False
 
