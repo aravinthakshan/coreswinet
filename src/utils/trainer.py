@@ -94,10 +94,12 @@ def train(
         if epoch<bypass_epoch:
             model.bypass_second = False
             model.bypass_first = False
+
         elif epoch<bypass_epoch_second:
             model.bypass_first = False
             model.bypass_second = True
             print(f"\nEpoch {epoch + 1}: Disabling second encoder and contrastive loss")
+
         else:
             model.bypass_second = False
             model.bypass_first = True
@@ -196,8 +198,8 @@ def train(
                     #     n2n_output = n2n_model.denoise(noise)
                     # else:
                     #     n2n_output = noise
-                    n2n_output = un_tan_fi(clean) ##note
-                    output, _, _ = model(noise, n2n_output)
+                    gt = un_tan_fi(clean) ##note
+                    output, _, _ = model(noise, gt)
                     psnr_val_itr, ssim_val_itr = get_metrics(clean, output, psnr_metric, ssim_metric)
                     psnr_val += psnr_val_itr
                     ssim_val += ssim_val_itr
