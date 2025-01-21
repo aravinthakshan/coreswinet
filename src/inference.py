@@ -29,40 +29,34 @@ def test(
     device='cuda',
     use_wandb=True,
 ):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Using device: {device}")
-    
-    if use_wandb:
-        wandb.init(project="DeFInet", config={
-            "noise_level": noise_level,
-            "crop_size": crop_size,
-            "num_crops": num_crops
-        })
-    
-    main_model_snap, n2n_model = load_models(
-        './main_model/snapshot_model.pth', 
+    # Load models
+    main_model_snap, _ = load_models(
+        './snap_model/snapshot_model.pth', 
         './n2n_model/best_model_n2n.pth', 
         device
     )
-    main_model, n2n_model = load_models(
+    main_model, _ = load_models(
         './main_model/best_model.pth', 
         './n2n_model/best_model_n2n.pth', 
         device
     )
 
-    main_model_snap.to(device).eval()
-    n2n_model.to(device).eval()
-    main_model.to(device).eval
-    
+    # Set model states
+    for model in [main_model_snap, main_model]:
+        model.to(device)
+        model.eval()
+
+    # Set bypass states after loading
     main_model_snap.bypass_second = True 
     main_model.bypass_first = True
-    print("Main Model Bypass!")
+    print("Models loaded and bypass states set!")
     
+    # Initialize dataset and metrics
     dataset = CBSD68Dataset(
         root_dir=test_dir, 
-        noise_level=25,
-        crop_size=256,
-        num_crops=34,
+        noise_level=noise_level,
+        crop_size=crop_size,
+        num_crops=num_crops,
         normalize=True,
         tanfi=True 
     )
@@ -71,36 +65,26 @@ def test(
     psnr_metric = torchmetrics.image.PeakSignalNoiseRatio().to(device)
     ssim_metric = torchmetrics.image.StructuralSimilarityIndexMeasure().to(device)
     
-    # Reset metrics at start
-    psnr_metric.reset()
-    ssim_metric.reset()
-    
-    # Initialize running averages
-    total_psnr = 0
-    total_ssim = 0
+    total_psnr = total_ssim = 0
     num_batches = 0
     
-    with tqdm(dataloader, desc="Testing Progress") as loader:
-        for noise, clean in loader:
-            noise, clean = noise.to(device), clean.to(device)
-            
-            with torch.no_grad():
+    with torch.inference_mode():  # More efficient than no_grad
+        with tqdm(dataloader, desc="Testing Progress") as loader:
+            for noise, clean in loader:
+                noise, clean = noise.to(device), clean.to(device)
+                
                 gt = un_tan_fi(clean)
-                main_model_snap_out,_,_ = main_model_snap(noise,gt)
-                output_main, _, _ = main_model(noise,main_model_snap_out)
-            
-            # Calculate metrics for main model
-            psnr_main, ssim_main = get_metrics(clean, output_main, psnr_metric, ssim_metric)
-            
-            # Update running averages (per batch, not per image)
-            total_psnr += psnr_main
-            total_ssim += ssim_main
-            num_batches += 1
-            
-            # Update progress bar
-            loader.set_postfix(psnr=psnr_main, ssim=ssim_main)
+                main_model_snap_out, _, _ = main_model_snap(noise, gt)
+                output_main, _, _ = main_model(noise, main_model_snap_out)
+                
+                psnr_main, ssim_main = get_metrics(clean, output_main, psnr_metric, ssim_metric)
+                
+                total_psnr += psnr_main
+                total_ssim += ssim_main
+                num_batches += 1
+                
+                loader.set_postfix(psnr=psnr_main, ssim=ssim_main)
     
-    # Calculate final averages
     avg_psnr = total_psnr / num_batches
     avg_ssim = total_ssim / num_batches
     
@@ -114,17 +98,6 @@ def test(
             "avg_ssim_test": avg_ssim
         })
         wandb.finish()
-
-def test_model(config):
-    test(
-        config['batch_size'],
-        config['test_dir'],
-        config['wandb'],
-        config['device'], 
-        config['noise_level']
-    )
-    
-    
 # def preprocess_image(img_path, device):
 #     # Open the image and convert it to RGB
 #     image = Image.open(img_path).convert('RGB')

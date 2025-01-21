@@ -87,6 +87,7 @@ def train(
     # use_n2n = True
     os.makedirs('./main_model', exist_ok=True)
     os.makedirs('./n2n_model', exist_ok=True)
+    os.makedirs('./snap_model', exist_ok=True)
     
     # Training loop
     for epoch in range(epochs):
@@ -165,7 +166,7 @@ def train(
             ssim_metric.reset()
         
         # Validation loop
-        model.eval()
+        # model.eval()
         # if epoch >= bypass_epoch:
         #     model.bypass_second = True
         #     max_psnr = 0
@@ -234,17 +235,36 @@ def train(
                 }, './n2n_model/best_model_n2n.pth')
                 
                 print(f"Saved n2n model at epoch {epoch}.")
-                
                 if epoch == bypass_epoch_second - 1:
+                    
+                    snapshot_path = './snap_model/snapshot_model.pth'
                     torch.save({
-                        'epoch': epoch,
-                        'model_state_dict': model.state_dict(),
-                    }, './main_model/snapshot_model.pth')
-                    print("Saved Snapshot weights and loaded snapshot model")
-                    main_checkpoint = torch.load('./main_model/best_model.pth', map_location=device)
-                    modeltwo = Model()  # Initialize main model
+                            'epoch': epoch,
+                            'model_state_dict': model.state_dict(),
+                        }, snapshot_path)
+                    print("Saved Snapshot weights")
+                        
+                    main_checkpoint = torch.load(snapshot_path, map_location=device)
+                    modeltwo = Model(
+                            in_channels=3, 
+                            contrastive=True, 
+                            bypass_first=False, 
+                            bypass_second=True
+                        ).to(device)
                     modeltwo.load_state_dict(main_checkpoint['model_state_dict'])
-                    print(f"Loaded main for inference !! ")
+                    modeltwo.eval() 
+                    print("Loaded snapshot model for inference")
+                
+                # if epoch == bypass_epoch_second - 1:
+                #     torch.save({
+                #         'epoch': epoch,
+                #         'model_state_dict': model.state_dict(),
+                #     }, './snap_model/snapshot_model.pth')
+                #     print("Saved Snapshot weights and loaded snapshot model")
+                #     main_checkpoint = torch.load('./snap_model/snapshot_model.pth', map_location=device)
+                #     modeltwo = Model()  # Initialize main model
+                #     modeltwo.load_state_dict(main_checkpoint['model_state_dict'])
+                #     print(f"Loaded main for inference !! ")
     
             print(f"\nVal PSNR: {psnr_val:.4f}")
             print(f"Val SSIM: {ssim_val:.4f}")
@@ -257,7 +277,7 @@ def train(
         # if max_psnr > psnr_threshold:
         #     print(f"PSNR threshold exceeded at epoch {epoch + 1}. Disabling N2N model.")
 
-    main_vis(test_dir)
+    # main_vis(test_dir)
     
 
 def train_model(config):
