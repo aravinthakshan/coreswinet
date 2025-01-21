@@ -20,7 +20,7 @@ def un_tan_fi(data):
     d /= 2
     return d
 
-def test(
+def test_model(
     batch_size,
     test_dir,
     noise_level=25,
