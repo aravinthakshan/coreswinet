@@ -328,15 +328,15 @@ if __name__ == "__main__":
     model_bypass = Model(in_channels=3).to(device)
     
     batch_size = 2
-    dummy_input = torch.randn(batch_size, 3, 256, 256).to(device)
-    dummy_n2n = torch.randn(batch_size, 3, 256, 256).to(device)
+    dummy_input = torch.randn(batch_size, 3, 321, 481).to(device)
+    dummy_n2n = torch.randn(batch_size, 3, 321, 481).to(device)
 
     # Print model summary using torchsummary for two inputs
     print("\nModel Summary (Normal Mode):")
-    summary(model_normal, input_size=[(3, 256, 256), (3, 256, 256)], device=device)
+    summary(model_normal, input_size=[(3, 321, 481), (3, 321, 481)], device=device)
 
     print("\nModel Summary (Bypass Mode):")
-    summary(model_bypass, input_size=[(3, 256, 256), (3, 256, 256)], device=device)
+    summary(model_bypass, input_size=[(3, 321, 481), (3, 321, 481)], device=device)
 
     # Test both modes
     output_normal = model_normal(dummy_input, dummy_n2n)
