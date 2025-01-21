@@ -12,8 +12,8 @@ from visualizer import main_vis
 from utils.soap_optimizer import SOAP
 from utils.model.archs.ZSN2N import train_n2n, N2NNetwork
 from utils.loss import ContrastiveLoss, TextureLoss, PSNRLoss
-import os
- 
+import os 
+
 def train(
     epochs,
     batch_size,
@@ -24,8 +24,9 @@ def train(
     lr=3e-3,
     n2n_epochs=10,
     contrastive_temperature=0.5,
+      # New parameter to control when to enable bypass
 ):
-    # Dataset and dataloaders setup remains the same
+    # Dataset and dataloaders
     dataset = Waterloo(root_dir=train_dir, noise_level=25, crop_size=256, num_crops=2, normalize=True,augmentation=get_training_augmentation())
     train_size = int(0.8 * len(dataset))
     val_size = len(dataset) - train_size
@@ -37,15 +38,14 @@ def train(
     
     print(f"Images per epoch Train: {len(train_loader) * train_loader.batch_size}")
     print(f"Images per epoch Val: {len(val_loader) * val_loader.batch_size}")
-    
     # Train N2N model
     print("Training N2N model...")
-    model = N2NNetwork()
+    model = N2NNetwork()  ### N2N
     n2n_model, psnr_threshold = train_n2n(epochs=n2n_epochs, model=model, dataloader=train_loader)
     print("PSNR THRESHOLD:", psnr_threshold)
     n2n_model.eval()
 
-    # Initialize main model
+    # Initialize main model with bypass parameter
     model = Model(in_channels=3, contrastive=True, bypass=False).to(device)
     
     # Optimizer
@@ -59,24 +59,11 @@ def train(
         normalize_grads=True
     )
     
-    # Add learning rate scheduler
-    # Using ReduceLROnPlateau to reduce LR when validation PSNR stops improving
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer,
-        mode='max',           # Since we're monitoring PSNR (higher is better)
-        factor=0.5,          # Multiply LR by this factor on plateau
-        patience=5,          # Number of epochs to wait before reducing LR
-        threshold=0.01,      # Minimum change in PSNR to be considered an improvement
-        threshold_mode='abs', # Use absolute threshold value rather than relative
-        cooldown=2,          # Number of epochs to wait after LR change before resuming normal operation
-        verbose=True,        # Print message when LR is reduced
-        min_lr=1e-6         # Minimum LR threshold
-    )
-    
-    # Loss functions and metrics remain the same
+    # Loss functions
     mse_criterion = nn.MSELoss()
     contrastive_loss_fn = ContrastiveLoss(batch_size=batch_size, temperature=contrastive_temperature)
     psnr_loss_func = PSNRLoss()
+    # Metrics
     psnr_metric = torchmetrics.image.PeakSignalNoiseRatio().to(device)
     ssim_metric = torchmetrics.image.StructuralSimilarityIndexMeasure().to(device)
     
@@ -93,15 +80,15 @@ def train(
         'best_epoch': 0,
         'max_psnr': 0,
         'max_ssim': 0,
-        'learning_rate': lr,  # Add LR tracking to logger
     }
     
+    # use_n2n = True
     os.makedirs('./main_model', exist_ok=True)
     os.makedirs('./n2n_model', exist_ok=True)
     
     # Training loop
     for epoch in range(epochs):
-        # Bypass logic remains the same
+        # Check if we should enable bypass and disable contrastive loss
         if epoch >= bypass_epoch:
             model.bypass = True
             print(f"\nEpoch {epoch + 1}: Enabling encoder bypass and disabling contrastive loss")
@@ -115,18 +102,28 @@ def train(
         psnr_metric.reset()
         ssim_metric.reset()
         
-        # Training loop body remains largely the same
         with tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs} - Training Progress") as loader:
             for itr, batch_data in enumerate(loader):
                 noise, clean = [x.to(device) for x in batch_data]
-                n2n_output = un_tan_fi(clean)
                 
+                # if use_n2n:
+                #     with torch.no_grad():
+                #         n2n_output = n2n_model.denoise(noise)
+                # else:
+                #     n2n_output = noise
+
+                
+                n2n_output = un_tan_fi(clean)# feeding ground truth  
+                                  
                 optimizer.zero_grad()
+                
+                # Forward pass
                 output, f1, f2 = model(noise, n2n_output)
                 
+                # Calculate losses
                 mse_loss = mse_criterion(output, clean)
                 psnr_loss = psnr_loss_func(output,clean)
-                
+                # Only apply contrastive loss before bypass_epoch
                 if epoch < bypass_epoch:
                     contrastive_loss = contrastive_loss_fn(f1, f2)
                     loss = mse_loss + 0.01 * contrastive_loss + 0.1 * psnr_loss
@@ -136,34 +133,31 @@ def train(
                 loss.backward()
                 optimizer.step()
                 
+                # Calculate metrics
                 psnr_train_itr, ssim_train_itr = get_metrics(clean, output, psnr_metric, ssim_metric)
                 
                 total_loss.append(loss.item())
                 psnr_train += psnr_train_itr
                 ssim_train += ssim_train_itr
                 
-                # Add current learning rate to progress bar
-                current_lr = optimizer.param_groups[0]['lr']
-                loader.set_postfix(loss=loss.item(), psnr=psnr_train_itr, ssim=ssim_train_itr, lr=current_lr)
-        
-        # Calculate and log training metrics
-        psnr_train /= (itr + 1)
-        ssim_train /= (itr + 1)
-        avg_loss = sum(total_loss) / len(total_loss)
-        
-        logger['train_loss'] = avg_loss
-        logger['train_psnr'] = psnr_train
-        logger['train_ssim'] = ssim_train
-        logger['learning_rate'] = optimizer.param_groups[0]['lr']  # Log current LR
-        
-        print(f'\nEpoch {epoch + 1}/{epochs}')
-        print(f'TRAIN Loss: {avg_loss:.4f}')
-        print(f'TRAIN PSNR: {psnr_train:.4f}')
-        print(f'TRAIN SSIM: {ssim_train:.4f}')
-        print(f'Learning Rate: {optimizer.param_groups[0]["lr"]:.6f}')
-        
-        psnr_metric.reset()
-        ssim_metric.reset()
+                loader.set_postfix(loss=loss.item(), psnr=psnr_train_itr, ssim=ssim_train_itr)
+            
+            # Average metrics
+            psnr_train /= (itr + 1)
+            ssim_train /= (itr + 1)
+            avg_loss = sum(total_loss) / len(total_loss)
+            
+            logger['train_loss'] = avg_loss
+            logger['train_psnr'] = psnr_train
+            logger['train_ssim'] = ssim_train
+            
+            print(f'\nEpoch {epoch + 1}/{epochs}')
+            print(f'TRAIN Loss: {avg_loss:.4f}')
+            print(f'TRAIN PSNR: {psnr_train:.4f}')
+            print(f'TRAIN SSIM: {ssim_train:.4f}')
+            
+            psnr_metric.reset()
+            ssim_metric.reset()
         
         # Validation loop
         model.eval()
@@ -178,8 +172,13 @@ def train(
             psnr_val, ssim_val = 0, 0
             with torch.no_grad():
                 for batch_data in loader:
-                    noise, clean = [x.to(device) for x in batch_data]
-                    n2n_output = un_tan_fi(clean)
+                    noise, clean = [x.to(device) for x in batch_data]        
+
+                    # if use_n2n:
+                    #     n2n_output = n2n_model.denoise(noise)
+                    # else:
+                    #     n2n_output = noise
+                    n2n_output = un_tan_fi(clean) ##note
                     output, _, _ = model(noise, n2n_output)
                     psnr_val_itr, ssim_val_itr = get_metrics(clean, output, psnr_metric, ssim_metric)
                     psnr_val += psnr_val_itr
@@ -188,26 +187,20 @@ def train(
             psnr_val /= len(val_loader)
             ssim_val /= len(val_loader)
             
-            # Update learning rate scheduler based on validation PSNR
-            scheduler.step(psnr_val)
-            
             logger['val_psnr'] = psnr_val
             logger['val_ssim'] = ssim_val
             logger['epoch'] = epoch + 1
 
-            if max_psnr <= psnr_val:
+            if max_psnr <= psnr_val :
                 max_ssim = ssim_val
                 max_psnr = psnr_val
                 logger['max_ssim'] = max_ssim
                 logger['max_psnr'] = max_psnr
                 logger['best_epoch'] = epoch + 1
                 
-                # Save model checkpoints
                 torch.save({
                     'epoch': epoch,
                     'model_state_dict': model.state_dict(),
-                    'optimizer_state_dict': optimizer.state_dict(),
-                    'scheduler_state_dict': scheduler.state_dict(),  # Save scheduler state
                     'max_ssim': max_ssim,
                     'max_psnr': max_psnr,
                 }, './main_model/best_model.pth')
@@ -219,15 +212,23 @@ def train(
                     'max_ssim': max_ssim,
                     'max_psnr': max_psnr,
                 }, './n2n_model/best_model_n2n.pth')
+                
                 print(f"Saved n2n model at epoch {epoch}.")
+                print(f"Saved Models at epoch {epoch}.")
                 
             print(f"\nVal PSNR: {psnr_val:.4f}")
             print(f"Val SSIM: {ssim_val:.4f}")
             
             if wandb_debug:
+                # visualize_epoch(model, n2n_model, val_loader, device, epoch, wandb_debug)
                 wandb.log(logger)
+        
+        # # Check if max_psnr exceeds threshold
+        # if max_psnr > psnr_threshold:
+        #     print(f"PSNR threshold exceeded at epoch {epoch + 1}. Disabling N2N model.")
 
     main_vis(test_dir)
+    
 
 def train_model(config):
     train(
