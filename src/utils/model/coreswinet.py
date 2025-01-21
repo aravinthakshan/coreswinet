@@ -3,11 +3,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 import segmentation_models_pytorch as smp
 from torchsummary import summary
-# from utils.model.archs.SwinBlocks import SwinTransformerBlock
-# from utils.model.archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
-# from utils.model.archs.ZSN2N import N2NNetwork
-from archs.SwinBlocks import SwinTransformerBlock
-from archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
+from utils.model.archs.SwinBlocks import SwinTransformerBlock
+from utils.model.archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
+from utils.model.archs.ZSN2N import N2NNetwork
+# from archs.SwinBlocks import SwinTransformerBlock
+# from archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
 
 
 class PReLUBlock(nn.Module):
@@ -139,7 +139,7 @@ class Model(nn.Module):
 
         # The last processed feature becomes the bottleneck
         bottleneck = self.bottleneck_attention(processed_features[-1])
-
+        
         # Pass processed features into decoder as skip connections
         decoder_features = processed_features[:-1]
         decoder_output = self.decoder(*decoder_features, bottleneck)
