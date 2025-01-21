@@ -48,6 +48,7 @@ def train(
 
     # Initialize main model
     model = Model(in_channels=3, contrastive=True, bypass=False).to(device)
+    modeltwo = Model(in_channels=3, contrastive=True, bypass=False).to(device)
     
     # Optimizer
     optimizer = SOAP(
@@ -104,13 +105,17 @@ def train(
     for epoch in range(epochs):
         # Bypass logic remains the same
         if epoch >= bypass_epoch:
-            model.bypass_first = True
+            model.bypass_first = False
+            model.bypass_second = True
             print(f"\nEpoch {epoch + 1}: Enabling first bypass and disabling contrastive loss")
         elif epoch>=bypass_epoch_second:
             model.bypass_second = False
-            print(f"\nEpoch {epoch + 1}: Your code sucks ass aravinth")
+            model.bypass_first = True
+            print(f"\nEpoch {epoch + 1}: Enabling second bypass and disabling aravinths code")
         else:
-            model.bypass = False
+            model.bypass_second = False
+            model.bypass_first = False
+
 
         model.train()
         total_loss = []
@@ -123,10 +128,14 @@ def train(
         with tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs} - Training Progress") as loader:
             for itr, batch_data in enumerate(loader):
                 noise, clean = [x.to(device) for x in batch_data]
-                n2n_output = un_tan_fi(clean)
-                
+                gt = un_tan_fi(clean)
+
+                if model.bypass_first:
+                    mtwo_output, _, _ = modeltwo(noise,gt)
+                    gt = mtwo_output
+
                 optimizer.zero_grad()
-                output, f1, f2 = model(noise, n2n_output)
+                output, f1, f2 = model(noise, gt)
                 
                 mse_loss = mse_criterion(output, clean)
                 psnr_loss = psnr_loss_func(output,clean)
@@ -172,11 +181,11 @@ def train(
         # Validation loop
         model.eval()
         if epoch >= bypass_epoch:
-            model.bypass = True
+            model.bypass_second = True
             max_psnr = 0
             max_ssim = 0
         else:
-            model.bypass = False
+            model.bypass_second = False
             
         with tqdm(val_loader, desc="Validation Progress") as loader:
             psnr_val, ssim_val = 0, 0
@@ -225,6 +234,17 @@ def train(
                 }, './n2n_model/best_model_n2n.pth')
                 print(f"Saved n2n model at epoch {epoch}.")
                 
+                if epoch == bypass_epoch_second - 1:
+                    torch.save({
+                        'epoch': epoch,
+                        'model_state_dict': model.state_dict(),
+                    }, './main_model/snapshot_model.pth')
+                    print("Saved Snapshot weights and loaded snapshot model")
+                    main_checkpoint = torch.load('./main_model/best_model.pth', map_location=device)
+                    modeltwo = Model()  # Initialize main model
+                    modeltwo.load_state_dict(main_checkpoint['model_state_dict'])
+                    print(f"Loaded main for inference !! ")
+    
             print(f"\nVal PSNR: {psnr_val:.4f}")
             print(f"Val SSIM: {ssim_val:.4f}")
             
