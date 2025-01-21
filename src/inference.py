@@ -39,16 +39,23 @@ def test(
             "num_crops": num_crops
         })
     
+    main_model_snap, n2n_model = load_models(
+        './main_model/snapshot_model.pth', 
+        './n2n_model/best_model_n2n.pth', 
+        device
+    )
     main_model, n2n_model = load_models(
         './main_model/best_model.pth', 
         './n2n_model/best_model_n2n.pth', 
         device
     )
 
-    main_model.to(device).eval()
+    main_model_snap.to(device).eval()
     n2n_model.to(device).eval()
+    main_model.to(device).eval
     
-    main_model.bypass = True 
+    main_model_snap.bypass_second = True 
+    main_model.bypass_first = True
     print("Main Model Bypass!")
     
     dataset = CBSD68Dataset(
@@ -78,8 +85,9 @@ def test(
             noise, clean = noise.to(device), clean.to(device)
             
             with torch.no_grad():
-                output_n2n = un_tan_fi(clean)
-                output_main, _, _ = main_model(noise, output_n2n)
+                gt = un_tan_fi(clean)
+                main_model_snap_out,_,_ = main_model_snap(noise,gt)
+                output_main, _, _ = main_model(noise,main_model_snap_out)
             
             # Calculate metrics for main model
             psnr_main, ssim_main = get_metrics(clean, output_main, psnr_metric, ssim_metric)
