@@ -3,11 +3,24 @@ import torch.nn as nn
 import torch.nn.functional as F
 import segmentation_models_pytorch as smp
 from torchsummary import summary
-from utils.model.archs.SwinBlocks import SwinTransformerBlock
-from utils.model.archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
-from utils.model.archs.ZSN2N import N2NNetwork
-# from archs.SwinBlocks import SwinTransformerBlock
-# from archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
+# from utils.model.archs.SwinBlocks import SwinTransformerBlock
+# from utils.model.archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
+# from utils.model.archs.ZSN2N import N2NNetwork
+from archs.SwinBlocks import SwinTransformerBlock
+from archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
+
+class PReLUBlock(nn.Module):
+    def __init__(self, channels):
+        super().__init__()
+        self.block = nn.Sequential(
+            nn.Conv2d(channels, channels, kernel_size=3, stride=1, padding=1),
+            nn.PReLU(),
+            nn.Conv2d(channels, channels, kernel_size=3, stride=1, padding=1),
+            nn.PReLU(),
+        )
+    
+    def forward(self, x):
+        return self.block(x)
 
 class PReLUBlock(nn.Module):
     def __init__(self, channels):
@@ -23,10 +36,9 @@ class PReLUBlock(nn.Module):
         return self.block(x)
     
 class Model(nn.Module):
-    def __init__(self, in_channels=3, contrastive=True, bypass=False, bypass_first=False):
+    def __init__(self, in_channels=3, contrastive=True, bypass=False):
         super().__init__()
         self.bypass = bypass
-        self.bypass_first = bypass_first
 
         # First encoder (for noisy input)
         self.unet1 = smp.Unet(
@@ -37,7 +49,7 @@ class Model(nn.Module):
             decoder_channels=(512, 256, 128, 64, 64),
         )
 
-        # Second encoder
+        # Second encoder (for N2N denoised input)
         self.unet2 = smp.Unet(
             encoder_name="resnet18",
             encoder_weights="imagenet",
@@ -118,19 +130,8 @@ class Model(nn.Module):
             x_noisy (torch.Tensor): Noisy input image
             x_n2n (torch.Tensor): N2N denoised version of the input image
         """
-        if self.bypass_first:
-            # Skip first encoder and directly process through Swin blocks
-            x_processed = x_noisy
-            features1 = []
-            for swin_block in self.swin_blocks:
-                B, C, H, W = x_processed.shape
-                feat_reshaped = x_processed.flatten(2).transpose(1, 2)
-                swin_out = swin_block(feat_reshaped)
-                x_processed = swin_out.transpose(1, 2).reshape(B, C, H, W)
-                features1.append(x_processed)
-        else:
-            # Get features from first encoder
-            features1 = list(self.encoder1(x_noisy))
+        # Get features from first encoder
+        features1 = list(self.encoder1(x_noisy))
         
         # Get features from second encoder only if not bypassing
         if not self.bypass:
@@ -160,7 +161,7 @@ class Model(nn.Module):
         if self.contrastive:
             f1 = self.contrastive_head1(features1[-1])
             if self.bypass:
-                f2 = self.contrastive_head2(features1[-1])
+                f2 = self.contrastive_head2(features1[-1])  # Use features1 when bypassing
             else:
                 f2 = self.contrastive_head2(features2[-1])
             return output, f1, f2
@@ -328,15 +329,15 @@ if __name__ == "__main__":
     model_bypass = Model(in_channels=3).to(device)
     
     batch_size = 2
-    dummy_input = torch.randn(batch_size, 3, 321, 481).to(device)
-    dummy_n2n = torch.randn(batch_size, 3, 321, 481).to(device)
+    dummy_input = torch.randn(batch_size, 3, 256, 256).to(device)
+    dummy_n2n = torch.randn(batch_size, 3, 256, 256).to(device)
 
     # Print model summary using torchsummary for two inputs
     print("\nModel Summary (Normal Mode):")
-    summary(model_normal, input_size=[(3, 321, 481), (3, 321, 481)], device=device)
+    summary(model_normal, input_size=[(3, 256, 256), (3, 256, 256)], device=device)
 
     print("\nModel Summary (Bypass Mode):")
-    summary(model_bypass, input_size=[(3, 321, 481), (3, 321, 481)], device=device)
+    summary(model_bypass, input_size=[(3, 256, 256), (3, 256, 256)], device=device)
 
     # Test both modes
     output_normal = model_normal(dummy_input, dummy_n2n)
