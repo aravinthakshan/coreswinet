@@ -48,7 +48,7 @@ def train(
 
     # Initialize main model with bypass parameter
     model = Model(in_channels=3, contrastive=True, bypass_first=False, bypass_second=False).to(device)
-    modeltwo = Model(in_channels=3, contrastive=True, bypass_first=False).to(device)
+    modeltwo = Model(in_channels=3, contrastive=True, bypass_first=True, bypass_second=False).to(device)
     
     # Optimizer
     optimizer = SOAP(
@@ -91,21 +91,20 @@ def train(
     # Training loop
     for epoch in range(epochs):
         # Check if we should enable bypass and disable contrastive loss
-        if epoch>=bypass_epoch_second:
+        if epoch<bypass_epoch:
             model.bypass_second = False
-            model.bypass_first = True
-            print(f"\nEpoch {epoch + 1}: Enabling second bypass and disabling aravinths code")
-        elif epoch >= bypass_epoch:
+            model.bypass_first = False
+        elif epoch<bypass_epoch_second:
             model.bypass_first = False
             model.bypass_second = True
-            print(f"\nEpoch {epoch + 1}: Enabling first bypass and disabling contrastive loss")
-
+            print(f"\nEpoch {epoch + 1}: Disabling second encoder and contrastive loss")
         else:
             model.bypass_second = False
-            model.bypass_first = False
-
+            model.bypass_first = True
+            print(f"\nEpoch {epoch + 1}: Enabling second encoder, disabling first")
 
         model.train()
+        modeltwo.eval()
         total_loss = []
         psnr_train, ssim_train = 0, 0
         
@@ -165,12 +164,27 @@ def train(
         
         # Validation loop
         model.eval()
-        if epoch >= bypass_epoch:
+        # if epoch >= bypass_epoch:
+        #     model.bypass_second = True
+        #     max_psnr = 0
+        #     max_ssim = 0
+        # else:
+        #     model.bypass_second = False
+        if epoch<bypass_epoch:
+            model.bypass_second = False
+            model.bypass_first = False
+        elif epoch<bypass_epoch_second:
+            model.bypass_first = False
             model.bypass_second = True
             max_psnr = 0
             max_ssim = 0
+            print(f"\nEpoch {epoch + 1}: Disabling second encoder and contrastive loss")
         else:
             model.bypass_second = False
+            model.bypass_first = True
+            max_psnr = 0
+            max_ssim = 0
+            print(f"\nEpoch {epoch + 1}: Enabling second encoder, disabling first")
             
         with tqdm(val_loader, desc="Validation Progress") as loader:
             psnr_val, ssim_val = 0, 0
