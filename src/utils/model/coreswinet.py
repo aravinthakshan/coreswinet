@@ -98,7 +98,7 @@ class Model(nn.Module):
 
     def process_features(self, feat1, feat2, swin_block):
         if self.bypass_first:
-            # Skip element-wise max and directly process feat2 through Swin
+            # Skip element-wise max and directly process feat through Swin
             B, C, H, W = feat2.shape
             feat_reshaped = feat2.flatten(2).transpose(1, 2)
             swin_out = swin_block(feat_reshaped)
