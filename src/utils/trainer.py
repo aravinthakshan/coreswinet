@@ -1,6 +1,6 @@
 import wandb
 from torch.utils.data import DataLoader
-from utils.misc import get_metrics, un_tan_fi
+from utils.misc import get_metrics, visualize_epoch, un_tan_fi
 from utils.model.coreswinet import Model
 from utils.dataloader import CBSD68Dataset, Waterloo, get_training_augmentation
 from tqdm import tqdm
@@ -12,9 +12,8 @@ from visualizer import main_vis
 from utils.soap_optimizer import SOAP
 from utils.model.archs.ZSN2N import train_n2n, N2NNetwork
 from utils.loss import ContrastiveLoss, TextureLoss, PSNRLoss
-import os 
-import copy
-
+import os
+ 
 def train(
     epochs,
     batch_size,
@@ -26,7 +25,7 @@ def train(
     n2n_epochs=10,
     contrastive_temperature=0.5,
 ):
-    # Dataset and dataloaders
+    # Dataset and dataloaders setup remains the same
     dataset = Waterloo(root_dir=train_dir, noise_level=25, crop_size=256, num_crops=2, normalize=True,augmentation=get_training_augmentation())
     train_size = int(0.8 * len(dataset))
     val_size = len(dataset) - train_size
@@ -34,9 +33,7 @@ def train(
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
-    bypass_epoch = 30
-    target_psnr = 30.9
-    model2_saved = False
+    bypass_epoch = 20
     
     print(f"Images per epoch Train: {len(train_loader) * train_loader.batch_size}")
     print(f"Images per epoch Val: {len(val_loader) * val_loader.batch_size}")
@@ -51,11 +48,6 @@ def train(
     # Initialize main model
     model = Model(in_channels=3, contrastive=True, bypass=False).to(device)
     
-    # Create directories
-    os.makedirs('./main_model', exist_ok=True)
-    os.makedirs('./n2n_model', exist_ok=True)
-    os.makedirs('./model2', exist_ok=True)
-    
     # Optimizer
     optimizer = SOAP(
         model.parameters(),
@@ -67,12 +59,24 @@ def train(
         normalize_grads=True
     )
     
-    # Loss functions
+    # Add learning rate scheduler
+    # Using ReduceLROnPlateau to reduce LR when validation PSNR stops improving
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer,
+        mode='max',           # Since we're monitoring PSNR (higher is better)
+        factor=0.5,          # Multiply LR by this factor on plateau
+        patience=5,          # Number of epochs to wait before reducing LR
+        threshold=0.01,      # Minimum change in PSNR to be considered an improvement
+        threshold_mode='abs', # Use absolute threshold value rather than relative
+        cooldown=2,          # Number of epochs to wait after LR change before resuming normal operation
+        verbose=True,        # Print message when LR is reduced
+        min_lr=1e-6         # Minimum LR threshold
+    )
+    
+    # Loss functions and metrics remain the same
     mse_criterion = nn.MSELoss()
     contrastive_loss_fn = ContrastiveLoss(batch_size=batch_size, temperature=contrastive_temperature)
     psnr_loss_func = PSNRLoss()
-    
-    # Metrics
     psnr_metric = torchmetrics.image.PeakSignalNoiseRatio().to(device)
     ssim_metric = torchmetrics.image.StructuralSimilarityIndexMeasure().to(device)
     
@@ -89,14 +93,15 @@ def train(
         'best_epoch': 0,
         'max_psnr': 0,
         'max_ssim': 0,
+        'learning_rate': lr,  # Add LR tracking to logger
     }
     
-    # Model2 
-    model2 = None
+    os.makedirs('./main_model', exist_ok=True)
+    os.makedirs('./n2n_model', exist_ok=True)
     
     # Training loop
     for epoch in range(epochs):
-        # Check if we should enable bypass
+        # Bypass logic remains the same
         if epoch >= bypass_epoch:
             model.bypass = True
             print(f"\nEpoch {epoch + 1}: Enabling encoder bypass and disabling contrastive loss")
@@ -110,80 +115,71 @@ def train(
         psnr_metric.reset()
         ssim_metric.reset()
         
-        # Training phase
+        # Training loop body remains largely the same
         with tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs} - Training Progress") as loader:
             for itr, batch_data in enumerate(loader):
                 noise, clean = [x.to(device) for x in batch_data]
-                
-                # If model2 exists, use its output for the second encoder
-                if model2 is not None:
-                    with torch.no_grad():
-                        model2.eval()
-                        model2.bypass_first = True
-                        n2n_output, _, _ = model2(noise, un_tan_fi(clean))
-                else:
-                    n2n_output = un_tan_fi(clean) # ouput not n2n
+                n2n_output = un_tan_fi(clean)
                 
                 optimizer.zero_grad()
-                
-                # Forward pass
                 output, f1, f2 = model(noise, n2n_output)
                 
-                # Calculate losses
                 mse_loss = mse_criterion(output, clean)
-                psnr_loss = psnr_loss_func(output, clean)
+                psnr_loss = psnr_loss_func(output,clean)
                 
                 if epoch < bypass_epoch:
                     contrastive_loss = contrastive_loss_fn(f1, f2)
                     loss = mse_loss + 0.01 * contrastive_loss + 0.1 * psnr_loss
                 else:
-                    loss = mse_loss + 0.01 * psnr_loss 
+                    loss = mse_loss 
                 
                 loss.backward()
                 optimizer.step()
                 
-                # Calculate metrics
                 psnr_train_itr, ssim_train_itr = get_metrics(clean, output, psnr_metric, ssim_metric)
                 
                 total_loss.append(loss.item())
                 psnr_train += psnr_train_itr
                 ssim_train += ssim_train_itr
                 
-                loader.set_postfix(loss=loss.item(), psnr=psnr_train_itr, ssim=ssim_train_itr)
-            
-            # Average metrics
-            psnr_train /= (itr + 1)
-            ssim_train /= (itr + 1)
-            avg_loss = sum(total_loss) / len(total_loss)
-            
-            logger['train_loss'] = avg_loss
-            logger['train_psnr'] = psnr_train
-            logger['train_ssim'] = ssim_train
-            
-            print(f'\nEpoch {epoch + 1}/{epochs}')
-            print(f'TRAIN Loss: {avg_loss:.4f}')
-            print(f'TRAIN PSNR: {psnr_train:.4f}')
-            print(f'TRAIN SSIM: {ssim_train:.4f}')
+                # Add current learning rate to progress bar
+                current_lr = optimizer.param_groups[0]['lr']
+                loader.set_postfix(loss=loss.item(), psnr=psnr_train_itr, ssim=ssim_train_itr, lr=current_lr)
         
-        # Validation phase
-        model.eval()
+        # Calculate and log training metrics
+        psnr_train /= (itr + 1)
+        ssim_train /= (itr + 1)
+        avg_loss = sum(total_loss) / len(total_loss)
+        
+        logger['train_loss'] = avg_loss
+        logger['train_psnr'] = psnr_train
+        logger['train_ssim'] = ssim_train
+        logger['learning_rate'] = optimizer.param_groups[0]['lr']  # Log current LR
+        
+        print(f'\nEpoch {epoch + 1}/{epochs}')
+        print(f'TRAIN Loss: {avg_loss:.4f}')
+        print(f'TRAIN PSNR: {psnr_train:.4f}')
+        print(f'TRAIN SSIM: {ssim_train:.4f}')
+        print(f'Learning Rate: {optimizer.param_groups[0]["lr"]:.6f}')
+        
         psnr_metric.reset()
         ssim_metric.reset()
         
+        # Validation loop
+        model.eval()
+        if epoch >= bypass_epoch:
+            model.bypass = True
+            max_psnr = 0
+            max_ssim = 0
+        else:
+            model.bypass = False
+            
         with tqdm(val_loader, desc="Validation Progress") as loader:
             psnr_val, ssim_val = 0, 0
             with torch.no_grad():
                 for batch_data in loader:
                     noise, clean = [x.to(device) for x in batch_data]
-                    
-                    # Use model2's output if it exists
-                    if model2 is not None:
-                        model2.eval()
-                        model2.bypass_first = True
-                        n2n_output, _, _ = model2(noise, un_tan_fi(clean))
-                    else:
-                        n2n_output = un_tan_fi(clean)
-                    
+                    n2n_output = un_tan_fi(clean)
                     output, _, _ = model(noise, n2n_output)
                     psnr_val_itr, ssim_val_itr = get_metrics(clean, output, psnr_metric, ssim_metric)
                     psnr_val += psnr_val_itr
@@ -192,26 +188,12 @@ def train(
             psnr_val /= len(val_loader)
             ssim_val /= len(val_loader)
             
+            # Update learning rate scheduler based on validation PSNR
+            scheduler.step(psnr_val)
+            
             logger['val_psnr'] = psnr_val
             logger['val_ssim'] = ssim_val
             logger['epoch'] = epoch + 1
-
-
-            if psnr_val >= target_psnr and not model2_saved and epoch >= bypass_epoch:
-                print(f"\nReached target PSNR of {target_psnr}. Saving model2 and starting new fine-tuning phase.")
-                model2 = copy.deepcopy(model)
-                torch.save({
-                    'epoch': epoch,
-                    'model_state_dict': model2.state_dict(),
-                    'psnr': psnr_val,
-                    'ssim': ssim_val,
-                }, './model2/best_model2.pth')
-                model2_saved = True
-                # Reset
-                max_psnr = 0
-                max_ssim = 0
-                print("Model2 saved. Starting fine-tuning with model2's output.")
-                continue
 
             if max_psnr <= psnr_val:
                 max_ssim = ssim_val
@@ -220,52 +202,30 @@ def train(
                 logger['max_psnr'] = max_psnr
                 logger['best_epoch'] = epoch + 1
                 
-                # Save main model
+                # Save model checkpoints
                 torch.save({
                     'epoch': epoch,
                     'model_state_dict': model.state_dict(),
+                    'optimizer_state_dict': optimizer.state_dict(),
+                    'scheduler_state_dict': scheduler.state_dict(),  # Save scheduler state
                     'max_ssim': max_ssim,
                     'max_psnr': max_psnr,
                 }, './main_model/best_model.pth')
+                print(f"Saved main model at epoch {epoch}.")
                 
-                # Save N2N model
                 torch.save({
                     'epoch': epoch,
                     'model_state_dict': n2n_model.state_dict(),
                     'max_ssim': max_ssim,
                     'max_psnr': max_psnr,
                 }, './n2n_model/best_model_n2n.pth')
+                print(f"Saved n2n model at epoch {epoch}.")
                 
-                print(f"\nSaved models at epoch {epoch}.")
-            
             print(f"\nVal PSNR: {psnr_val:.4f}")
             print(f"Val SSIM: {ssim_val:.4f}")
             
             if wandb_debug:
                 wandb.log(logger)
-    
-  
-    if model2 is not None:
-        print("\nSaving final state of model2...")
-        torch.save({
-            'epoch': epochs-1,
-            'model_state_dict': model2.state_dict(),
-            'final_psnr': psnr_val,
-            'final_ssim': ssim_val,
-        }, './model2/final_model2.pth')
-        print("Final model2 saved.")
-        
-    else:
-        print("\nNo model2 was created during training (target PSNR was not reached).")
-        print("Saving current model as final model2...")
-        model2 = copy.deepcopy(model)
-        torch.save({
-            'epoch': epochs-1,
-            'model_state_dict': model2.state_dict(),
-            'final_psnr': psnr_val,
-            'final_ssim': ssim_val,
-        }, './model2/final_model2.pth')
-        print("Final model2 saved.")
 
     main_vis(test_dir)
 
