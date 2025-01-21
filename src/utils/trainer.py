@@ -47,8 +47,8 @@ def train(
     n2n_model.eval()
 
     # Initialize main model with bypass parameter
-    model = Model(in_channels=3, contrastive=True, bypass=False).to(device)
-    modeltwo = Model(in_channels=3, contrastive=True, bypass=False).to(device)
+    model = Model(in_channels=3, contrastive=True, bypass_first=False, bypass_second=False).to(device)
+    modeltwo = Model(in_channels=3, contrastive=True, bypass_first=False).to(device)
     
     # Optimizer
     optimizer = SOAP(
@@ -91,14 +91,15 @@ def train(
     # Training loop
     for epoch in range(epochs):
         # Check if we should enable bypass and disable contrastive loss
-        if epoch >= bypass_epoch:
-            model.bypass_first = False
-            model.bypass_second = True
-            print(f"\nEpoch {epoch + 1}: Enabling first bypass and disabling contrastive loss")
-        elif epoch>=bypass_epoch_second:
+        if epoch>=bypass_epoch_second:
             model.bypass_second = False
             model.bypass_first = True
             print(f"\nEpoch {epoch + 1}: Enabling second bypass and disabling aravinths code")
+        elif epoch >= bypass_epoch:
+            model.bypass_first = False
+            model.bypass_second = True
+            print(f"\nEpoch {epoch + 1}: Enabling first bypass and disabling contrastive loss")
+
         else:
             model.bypass_second = False
             model.bypass_first = False
