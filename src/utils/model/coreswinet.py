@@ -23,9 +23,9 @@ class PReLUBlock(nn.Module):
         return self.block(x)
 
 class Model(nn.Module):
-    def __init__(self, in_channels=3, contrastive=True, bypass=False, bypass_first=False):
+    def __init__(self, in_channels=3, contrastive=True, bypass_second=False, bypass_first=False):
         super().__init__()
-        self.bypass = bypass
+        self.bypass_second = bypass_second
         self.bypass_first = bypass_first
 
         # First encoder (for noisy input)
@@ -97,7 +97,7 @@ class Model(nn.Module):
         )
 
     def process_features(self, feat1, feat2, swin_block):
-        if self.bypass:
+        if self.bypass_second:
             # Skip element-wise max and directly process feat1 through Swin
             B, C, H, W = feat1.shape
             feat_reshaped = feat1.flatten(2).transpose(1, 2)
@@ -133,7 +133,7 @@ class Model(nn.Module):
             features1 = list(self.encoder1(x_noisy))
         
         # Get features from second encoder only if not bypassing
-        if not self.bypass:
+        if not self.bypass_second:
             features2 = list(self.encoder2(x_n2n))
         else:
             features2 = features1  # Dummy assignment, won't be used
@@ -159,7 +159,7 @@ class Model(nn.Module):
 
         if self.contrastive:
             f1 = self.contrastive_head1(features1[-1])
-            if self.bypass:
+            if self.bypass_second:
                 f2 = self.contrastive_head2(features1[-1])
             else:
                 f2 = self.contrastive_head2(features2[-1])
