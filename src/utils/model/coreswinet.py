@@ -9,6 +9,7 @@ from torchsummary import summary
 from archs.SwinBlocks import SwinTransformerBlock
 from archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
 
+
 class PReLUBlock(nn.Module):
     def __init__(self, channels):
         super().__init__()
@@ -21,12 +22,11 @@ class PReLUBlock(nn.Module):
     
     def forward(self, x):
         return self.block(x)
-
+    
 class Model(nn.Module):
-    def __init__(self, in_channels=3, contrastive=True, bypass=False, bypass_first=False):
+    def __init__(self, in_channels=3, contrastive=True, bypass=False):
         super().__init__()
         self.bypass = bypass
-        self.bypass_first = bypass_first
 
         # First encoder (for noisy input)
         self.unet1 = smp.Unet(
@@ -37,7 +37,7 @@ class Model(nn.Module):
             decoder_channels=(512, 256, 128, 64, 64),
         )
 
-        # Second encoder
+        # Second encoder (for N2N denoised input)
         self.unet2 = smp.Unet(
             encoder_name="resnet18",
             encoder_weights="imagenet",
@@ -118,19 +118,8 @@ class Model(nn.Module):
             x_noisy (torch.Tensor): Noisy input image
             x_n2n (torch.Tensor): N2N denoised version of the input image
         """
-        if self.bypass_first:
-            # Skip first encoder and directly process through Swin blocks
-            x_processed = x_noisy
-            features1 = []
-            for swin_block in self.swin_blocks:
-                B, C, H, W = x_processed.shape
-                feat_reshaped = x_processed.flatten(2).transpose(1, 2)
-                swin_out = swin_block(feat_reshaped)
-                x_processed = swin_out.transpose(1, 2).reshape(B, C, H, W)
-                features1.append(x_processed)
-        else:
-            # Get features from first encoder
-            features1 = list(self.encoder1(x_noisy))
+        # Get features from first encoder
+        features1 = list(self.encoder1(x_noisy))
         
         # Get features from second encoder only if not bypassing
         if not self.bypass:
@@ -160,11 +149,12 @@ class Model(nn.Module):
         if self.contrastive:
             f1 = self.contrastive_head1(features1[-1])
             if self.bypass:
-                f2 = self.contrastive_head2(features1[-1])
+                f2 = self.contrastive_head2(features1[-1])  # Use features1 when bypassing
             else:
                 f2 = self.contrastive_head2(features2[-1])
             return output, f1, f2
         return output
+
 
 
 if __name__ == "__main__":
@@ -197,3 +187,4 @@ if __name__ == "__main__":
     if isinstance(output_bypass, tuple):
         print(f"Bypass mode output shape: {output_bypass[0].shape}")
         print(f"Bypass mode contrastive feature shapes: {output_bypass[1].shape}, {output_bypass[2].shape}")
+
