@@ -23,11 +23,11 @@ def load_models(main_model_path, n2n_model_path, device):
     n2n_model.load_state_dict(n2n_checkpoint['model_state_dict'])
     print(f"Loaded n2n model state dict from {n2n_model_path}.")
     
-    max_ssim = main_checkpoint['max_ssim']  # Or use n2n_checkpoint, if you prefer
-    max_psnr = main_checkpoint['max_psnr']
-    epoch = main_checkpoint['epoch']
+    # max_ssim = main_checkpoint['max_ssim']  # Or use n2n_checkpoint, if you prefer
+    # max_psnr = main_checkpoint['max_psnr']
+    # epoch = main_checkpoint['epoch']
     
-    print(f"Loaded max_ssim: {max_ssim}, max_psnr: {max_psnr}, epoch: {epoch}.")
+    # print(f"Loaded max_ssim: {max_ssim}, max_psnr: {max_psnr}, epoch: {epoch}.")
     
     return main_model, n2n_model
 
