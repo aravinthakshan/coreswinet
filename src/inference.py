@@ -53,7 +53,7 @@ def test(
     
     dataset = CBSD68Dataset(
         root_dir=test_dir, 
-        noise_level=25,
+        noise_level=15,
         crop_size=256,
         num_crops=34,
         normalize=True,
