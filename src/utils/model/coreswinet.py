@@ -100,7 +100,7 @@ class Model(nn.Module):
         if self.bypass_first:
             # Skip element-wise max and directly process feat through Swin
             B, C, H, W = feat2.shape
-            print(feat2.shape)
+            # print(feat2.shape)
             feat_reshaped = feat2.flatten(2).transpose(1, 2)
             swin_out = swin_block(feat_reshaped)
             return swin_out.transpose(1, 2).reshape(B, C, H, W)
@@ -108,7 +108,7 @@ class Model(nn.Module):
         elif self.bypass_second:
             # Skip element-wise max and directly process feat1 through Swin
             B, C, H, W = feat1.shape
-            print(feat1.shape)
+            # print(feat1.shape)
             feat_reshaped = feat1.flatten(2).transpose(1, 2)
             swin_out = swin_block(feat_reshaped)
             return swin_out.transpose(1, 2).reshape(B, C, H, W)
