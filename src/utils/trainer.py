@@ -34,8 +34,8 @@ def train(
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
-    bypass_epoch = 20
-    bypass_epoch_second = 50
+    bypass_epoch = 2
+    bypass_epoch_second = 3
     
     print(f"Images per epoch Train: {len(train_loader) * train_loader.batch_size}")
     print(f"Images per epoch Val: {len(val_loader) * val_loader.batch_size}")
@@ -121,7 +121,7 @@ def train(
 
                 if model.bypass_first:
                     mtwo_output, _, _ = modeltwo(noise,gt)
-                    gt = mtwo_output
+                    gt = un_tan_fi(mtwo_output)
 
                 optimizer.zero_grad()
                 output, f1, f2 = model(noise, gt)
@@ -246,6 +246,7 @@ def train(
                         
                     main_checkpoint = torch.load(snapshot_path, map_location=device)
                     modeltwo = Model().to(device)
+                    modeltwo.bypass_first = True
                     modeltwo.load_state_dict(main_checkpoint['model_state_dict'])
                     modeltwo.eval() 
                     print("Loaded snapshot model for inference")
