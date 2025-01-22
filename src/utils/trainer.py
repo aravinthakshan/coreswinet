@@ -48,7 +48,7 @@ def train(
 
     # Initialize main model with bypass parameter
     model = Model(in_channels=3, contrastive=True, bypass_first=False, bypass_second=False).to(device)
-    modeltwo = Model(in_channels=3, contrastive=True, bypass_first=True, bypass_second=False).to(device)
+    modeltwo = Model(in_channels=3).to(device)
     
     # Optimizer
     optimizer = SOAP(
@@ -245,12 +245,7 @@ def train(
                     print("Saved Snapshot weights")
                         
                     main_checkpoint = torch.load(snapshot_path, map_location=device)
-                    modeltwo = Model(
-                            in_channels=3, 
-                            contrastive=True, 
-                            bypass_first=False, 
-                            bypass_second=True
-                        ).to(device)
+                    modeltwo = Model().to(device)
                     modeltwo.load_state_dict(main_checkpoint['model_state_dict'])
                     modeltwo.eval() 
                     print("Loaded snapshot model for inference")
