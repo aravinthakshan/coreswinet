@@ -25,7 +25,13 @@ def main(args):
             }
         )
     train_model(config)
-    test_model(config)
+    test_model(
+        batch_size=args.batch_size,
+        test_dir=args.test_dir,
+        noise_level=args.noise_level,
+        device=args.device,
+        use_wandb=args.wandbd
+    )
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
