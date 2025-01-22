@@ -180,11 +180,11 @@ if __name__ == "__main__":
     output_normal = model_normal(dummy_input, dummy_n2n)
     output_bypass = model_bypass(dummy_input, dummy_n2n)
 
-    if isinstance(output_normal, tuple):
-        print(f"Normal mode output shape: {output_normal[0].shape}")
-        print(f"Normal mode contrastive feature shapes: {output_normal[1].shape}, {output_normal[2].shape}")
+    # if isinstance(output_normal, tuple):
+    #     print(f"Normal mode output shape: {output_normal[0].shape}")
+    #     print(f"Normal mode contrastive feature shapes: {output_normal[1].shape}, {output_normal[2].shape}")
     
-    if isinstance(output_bypass, tuple):
-        print(f"Bypass mode output shape: {output_bypass[0].shape}")
-        print(f"Bypass mode contrastive feature shapes: {output_bypass[1].shape}, {output_bypass[2].shape}")
+    # if isinstance(output_bypass, tuple):
+    #     print(f"Bypass mode output shape: {output_bypass[0].shape}")
+    #     print(f"Bypass mode contrastive feature shapes: {output_bypass[1].shape}, {output_bypass[2].shape}")
 
