@@ -23,7 +23,7 @@ def un_tan_fi(data):
 def test(
     batch_size,
     test_dir,
-    noise_level=25,
+    noise_level=15,
     crop_size=256, 
     num_crops=34,
     device='cuda',

@@ -61,17 +61,17 @@ def train(
     
     # Add learning rate scheduler
     # Using ReduceLROnPlateau to reduce LR when validation PSNR stops improving
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer,
-        mode='max',           # Since we're monitoring PSNR (higher is better)
-        factor=0.5,          # Multiply LR by this factor on plateau
-        patience=5,          # Number of epochs to wait before reducing LR
-        threshold=0.01,      # Minimum change in PSNR to be considered an improvement
-        threshold_mode='abs', # Use absolute threshold value rather than relative
-        cooldown=2,          # Number of epochs to wait after LR change before resuming normal operation
-        verbose=True,        # Print message when LR is reduced
-        min_lr=1e-6         # Minimum LR threshold
-    )
+    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    #     optimizer,
+    #     mode='max',           # Since we're monitoring PSNR (higher is better)
+    #     factor=0.5,          # Multiply LR by this factor on plateau
+    #     patience=5,          # Number of epochs to wait before reducing LR
+    #     threshold=0.01,      # Minimum change in PSNR to be considered an improvement
+    #     threshold_mode='abs', # Use absolute threshold value rather than relative
+    #     cooldown=2,          # Number of epochs to wait after LR change before resuming normal operation
+    #     verbose=True,        # Print message when LR is reduced
+    #     min_lr=1e-6         # Minimum LR threshold
+    # )
     
     # Loss functions and metrics remain the same
     mse_criterion = nn.MSELoss()
@@ -189,7 +189,7 @@ def train(
             ssim_val /= len(val_loader)
             
             # Update learning rate scheduler based on validation PSNR
-            scheduler.step(psnr_val)
+            # scheduler.step(psnr_val)
             
             logger['val_psnr'] = psnr_val
             logger['val_ssim'] = ssim_val
@@ -207,7 +207,7 @@ def train(
                     'epoch': epoch,
                     'model_state_dict': model.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict(),
-                    'scheduler_state_dict': scheduler.state_dict(),  # Save scheduler state
+                    # 'scheduler_state_dict': scheduler.state_dict(),  # Save scheduler state
                     'max_ssim': max_ssim,
                     'max_psnr': max_psnr,
                 }, './main_model/best_model.pth')
