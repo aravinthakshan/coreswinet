@@ -246,7 +246,7 @@ def train(
                         
                     main_checkpoint = torch.load(snapshot_path, map_location=device)
                     modeltwo = Model().to(device)
-                    modeltwo.bypass_first = True
+                    modeltwo.bypass_second= True
                     modeltwo.load_state_dict(main_checkpoint['model_state_dict'])
                     modeltwo.eval() 
                     print("Loaded snapshot model for inference")
