@@ -120,7 +120,6 @@ def train(
                 gt = un_tan_fi(clean)
 
                 if model.bypass_first and modeltwo.bypass_second:
-                    print("In Train")
                     mtwo_output, _, _ = modeltwo(noise,gt)
                     gt = un_tan_fi(mtwo_output)
 
@@ -190,12 +189,11 @@ def train(
             with torch.no_grad():
                 for batch_data in loader:
                     noise, clean = [x.to(device) for x in batch_data]        
+                    gt = un_tan_fi(clean) ##note
 
                     if model.bypass_first and modeltwo.bypass_second:
                         mtwo_output, _, _ = modeltwo(noise,gt)
                         gt = un_tan_fi(mtwo_output)
-                        print("In Val")
-
                         
                     output, _, _ = model(noise, gt)
                     psnr_val_itr, ssim_val_itr = get_metrics(clean, output, psnr_metric, ssim_metric)
@@ -247,72 +245,53 @@ def train(
                     modeltwo.load_state_dict(main_checkpoint['model_state_dict'])
                     modeltwo.eval() 
                     print("Loaded snapshot model for inference")
-                    
-            if max_psnr <= psnr_val:
-                max_ssim = ssim_val
-                max_psnr = psnr_val
-                logger['max_ssim'] = max_ssim
-                logger['max_psnr'] = max_psnr
-                logger['best_epoch'] = epoch + 1
-                
-                # Save main model checkpoint
-                main_checkpoint = {
-                    'epoch': epoch,
-                    'model_state_dict': model.state_dict(),
-                    'max_ssim': max_ssim,
-                    'max_psnr': max_psnr,
-                }
-                main_model_path = './main_model/best_model.pth'
-                torch.save(main_checkpoint, main_model_path)
-                if wandb_debug:
-                    wandb.save(main_model_path)  # Log main model checkpoint to wandb
-                print(f"Saved main model at epoch {epoch}.")
-                
-                # Save N2N model checkpoint
-                n2n_checkpoint = {
-                    'epoch': epoch,
-                    'model_state_dict': n2n_model.state_dict(),
-                    'max_ssim': max_ssim,
-                    'max_psnr': max_psnr,
-                }
-                n2n_model_path = './n2n_model/best_model_n2n.pth'
-                torch.save(n2n_checkpoint, n2n_model_path)
-                if wandb_debug:
-                    wandb.save(n2n_model_path)  # Log N2N model checkpoint to wandb
-                print(f"Saved n2n model at epoch {epoch}.")
-                
-                # Save snapshot model at specific epoch
-                if epoch == bypass_epoch_second - 1:
-                    snapshot_path = './snap_model/snapshot_model.pth'
-                    snapshot_checkpoint = {
-                        'epoch': epoch,
-                        'model_state_dict': model.state_dict(),
-                    }
-                    torch.save(snapshot_checkpoint, snapshot_path)
-                    if wandb_debug:
-                        wandb.save(snapshot_path)  
-                    print("Saved Snapshot weights")
-                    
-                    # Load snapshot model for inference
-                    main_checkpoint = torch.load(snapshot_path, map_location=device)
-                    modeltwo = Model().to(device)
-                    modeltwo.bypass_second = True
-                    modeltwo.load_state_dict(main_checkpoint['model_state_dict'])
-                    modeltwo.eval()
-                    print("Loaded snapshot model for inference")
-
-            print(f"\nVal PSNR: {psnr_val:.4f}")
-            print(f"Val SSIM: {ssim_val:.4f}")
-            
-            if wandb_debug:
-                wandb.log(logger)                
     
             print(f"\nVal PSNR: {psnr_val:.4f}")
             print(f"Val SSIM: {ssim_val:.4f}")
             
             if wandb_debug:
                 wandb.log(logger)
-
+                
+        # After the main training loop ends
+    print("\nTraining completed. Saving final models...")
+    
+    final_main_path = './main_model/final_model.pth'
+    final_snap_path = './snap_model/final_snapshot.pth'
+    
+    torch.save({
+        'epoch': epochs-1,
+        'model_state_dict': model.state_dict(),
+        'max_ssim': max_ssim,
+        'max_psnr': max_psnr,
+    }, final_main_path)
+    
+    torch.save({
+        'epoch': epochs-1,
+        'model_state_dict': modeltwo.state_dict(),
+    }, final_snap_path)
+    
+    if True:
+        # Create artifacts
+        main_artifact = wandb.Artifact(
+            name='final_main_model',
+            type='model',
+            description='Final state of main model'
+        )
+        snap_artifact = wandb.Artifact(
+            name='final_snapshot_model',
+            type='model',
+            description='Final state of snapshot model'
+        )
+        
+        main_artifact.add_file(final_main_path)
+        snap_artifact.add_file(final_snap_path)
+        
+        # Log artifacts to wandb
+        wandb.log_artifact(main_artifact)
+        wandb.log_artifact(snap_artifact)
+        
+        print("Uploaded final models to wandb as artifacts")
+    
 def train_model(config):
     train(
         epochs=config['epochs'],
