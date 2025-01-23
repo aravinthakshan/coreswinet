@@ -28,6 +28,7 @@ def test(
     num_crops=34,
     device='cuda',
     use_wandb=True,
+    test_dataset='CBSD68'
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
@@ -50,15 +51,16 @@ def test(
     
     main_model.bypass = True 
     print("Main Model Bypass!")
-    
-    dataset = CBSD68Dataset(
-        root_dir=test_dir, 
-        noise_level=25,
-        crop_size=256,
-        num_crops=34,
-        normalize=True,
-        tanfi=True 
-    )
+    if test_dataset=='CBSD68':
+        dataset = CBSD68Dataset(
+            root_dir=test_dir, 
+            noise_level=25,
+            crop_size=256,
+            num_crops=34,
+            normalize=True,
+            tanfi=True 
+        )
+
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
     
     psnr_metric = torchmetrics.image.PeakSignalNoiseRatio().to(device)
@@ -113,7 +115,8 @@ def test_model(config):
         config['test_dir'],
         config['wandb'],
         config['device'], 
-        config['noise_level']
+        config['noise_level'],
+        config['test_dataset']
     )
     
     
