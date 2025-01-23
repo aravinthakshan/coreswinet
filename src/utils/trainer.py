@@ -22,11 +22,12 @@ def train(
     wandb_debug,
     device='cuda',
     lr=3e-3,
-    dataset_name='BSD',
+    dataset_name='Waterloo',
     n2n_epochs=10,
     contrastive_temperature=0.5,
       # New parameter to control when to enable bypass
 ):
+    print(dataset_name)
     # Dataset and dataloaders
     if dataset_name=='Waterloo':
         dataset = Waterloo(root_dir=train_dir, noise_level=25, crop_size=256, num_crops=2, normalize=True,augmentation=get_training_augmentation())
