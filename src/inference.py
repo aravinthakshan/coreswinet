@@ -75,7 +75,8 @@ def test_model(
                 
                 gt = un_tan_fi(clean)
                 main_model_snap_out, _, _ = main_model_snap(noise, gt)
-                output_main, _, _ = main_model(noise, main_model_snap_out)
+                x = un_tan_fi(main_model_snap_out)
+                output_main, _, _ = main_model(noise, x)
                 
                 psnr_main, ssim_main = get_metrics(clean, output_main, psnr_metric, ssim_metric)
                 

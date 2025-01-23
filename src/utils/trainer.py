@@ -119,7 +119,8 @@ def train(
                 noise, clean = [x.to(device) for x in batch_data]
                 gt = un_tan_fi(clean)
 
-                if model.bypass_first:
+                if model.bypass_first and modeltwo.bypass_second:
+                    print("In Train")
                     mtwo_output, _, _ = modeltwo(noise,gt)
                     gt = un_tan_fi(mtwo_output)
 
@@ -199,7 +200,12 @@ def train(
                     #     n2n_output = n2n_model.denoise(noise)
                     # else:
                     #     n2n_output = noise
-                    gt = un_tan_fi(clean) ##note
+                    if model.bypass_first and modeltwo.bypass_second:
+                        mtwo_output, _, _ = modeltwo(noise,gt)
+                        gt = un_tan_fi(mtwo_output)
+                        print("In Val")
+
+                        
                     output, _, _ = model(noise, gt)
                     psnr_val_itr, ssim_val_itr = get_metrics(clean, output, psnr_metric, ssim_metric)
                     psnr_val += psnr_val_itr
