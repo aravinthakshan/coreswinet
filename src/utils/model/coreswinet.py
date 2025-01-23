@@ -9,39 +9,6 @@ from utils.model.archs.ZSN2N import N2NNetwork
 # from archs.SwinBlocks import SwinTransformerBlock
 # from archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
 
-class PReLUBlock(nn.Module):
-    def __init__(self, channels):
-        super().__init__()
-        self.block = nn.Sequential(
-            nn.Conv2d(channels, channels, kernel_size=3, stride=1, padding=1),
-            nn.PReLU(),
-            nn.Conv2d(channels, channels, kernel_size=3, stride=1, padding=1),
-            nn.PReLU(),
-        )
-    
-    def forward(self, x):
-        return self.block(x)
-class HierarchicalBottleneck(nn.Module):
-    def __init__(self, channels, resolution=(8, 8)):
-        super().__init__()
-        self.swin = SwinTransformerBlock(
-            dim=channels,
-            input_resolution=resolution,
-            num_heads=min(8, max(1, channels // 32)),
-            window_size=4,
-            mlp_ratio=4.0
-        )
-        self.sca = SqueezeExcitationBlock(channels)
-        
-    def forward(self, x):
-        # First apply Swin for global attention
-        B, C, H, W = x.shape
-        x_reshaped = x.flatten(2).transpose(1, 2)
-        x_swin = self.swin(x_reshaped)
-        x_spatial = x_swin.transpose(1, 2).reshape(B, C, H, W)
-        
-        # Then refine with SCA
-        return self.sca(x_spatial)
     
 class Model(nn.Module):
     def __init__(self, in_channels=3, contrastive=True, bypass=False):
@@ -84,16 +51,7 @@ class Model(nn.Module):
         ])
 
         # Squeeze attention for bottleneck
-        # self.bottleneck_attention = SqueezeExcitationBlock(encoder_channels[-1])
-        # self.bottleneck_attention = SwinTransformerBlock(
-        # dim=encoder_channels[-1],
-        # input_resolution=(8, 8),  # 256 // (2^5) since ResNet18 has 5 stages
-        # num_heads=min(8, max(1, encoder_channels[-1] // 32)),
-        # window_size=4,  # Smaller window size for bottleneck
-        # mlp_ratio=4.0
-        # )
-        self.bottleneck_attention = HierarchicalBottleneck(encoder_channels[-1])
-
+        self.bottleneck_attention = SqueezeExcitationBlock(encoder_channels[-1])
 
         # Contrastive heads
         self.contrastive = contrastive
@@ -165,13 +123,8 @@ class Model(nn.Module):
                 self.swin_blocks[i]
             )
             processed_features.append(processed_feat)
-
+            
         # The last processed feature becomes the bottleneck
-        # B, C, H, W = processed_features[-1].shape
-        # bottleneck = processed_features[-1].flatten(2).transpose(1, 2)
-        # bottleneck = self.bottleneck_attention(bottleneck)
-        # bottleneck = bottleneck.transpose(1, 2).reshape(B, C, H, W)
-        # bottleneck = self.bottleneck_attention(processed_features[-1])
         bottleneck = self.bottleneck_attention(processed_features[-1])
 
         # Pass processed features into decoder as skip connections
@@ -339,6 +292,8 @@ class Model(nn.Module):
 #     if isinstance(output_bypass, tuple):
 #         print(f"Bypass mode output shape: {output_bypass[0].shape}")
 #         print(f"Bypass mode contrastive feature shapes: {output_bypass[1].shape}, {output_bypass[2].shape}")
+
+
 
 
 
