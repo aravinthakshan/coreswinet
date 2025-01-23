@@ -21,9 +21,9 @@ def un_tan_fi(data):
     return d
 
 def test_model(
-    batch_size,
-    test_dir,
-    noise_level=25,
+    batch_size =16,
+    # test_dir= ,
+    # noise_level=25,
     crop_size=256, 
     num_crops=34,
     device='cuda',
@@ -100,6 +100,10 @@ def test_model(
             "avg_ssim_test": avg_ssim
         })
         wandb.finish()
+        
+
+if __name__ == '__main__':
+    test_model()
 # def preprocess_image(img_path, device):
 #     # Open the image and convert it to RGB
 #     image = Image.open(img_path).convert('RGB')
