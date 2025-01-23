@@ -4,10 +4,10 @@ import torch.nn.functional as F
 import segmentation_models_pytorch as smp
 from torchsummary import summary
 # from utils.model.archs.SwinBlocks import SwinTransformerBlock
-from utils.model.archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
-from utils.model.archs.ZSN2N import N2NNetwork
-# from archs.SwinBlocks import SwinTransformerBlock
-# from archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
+# from utils.model.archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
+# from utils.model.archs.ZSN2N import N2NNetwork
+from archs.SwinBlocks import SwinTransformerBlock
+from archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
 
 class PReLUBlock(nn.Module):
     def __init__(self, channels):
@@ -125,8 +125,10 @@ class Model(nn.Module):
             features2 = list(self.encoder2(x_n2n))
         else:
             features2 = features1  # Dummy assignment, won't be used
-
-        max_feat = torch.maximum(features1, features2)
+        max_feat = []
+        for i in range(len(features1)):
+            step = torch.maximum(features1[i], features2[i])
+            max_feat.append(step)
 
         # Process each encoder level
         # processed_features = []
