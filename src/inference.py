@@ -94,12 +94,12 @@ def test_model(
     print(f"Average PSNR TEST: {avg_psnr:.4f}")
     print(f"Average SSIM TEST: {avg_ssim:.4f}")
     
-    if use_wandb:
-        wandb.log({
-            "avg_psnr_test": avg_psnr,
-            "avg_ssim_test": avg_ssim
-        })
-        wandb.finish()
+    # if use_wandb:
+    #     wandb.log({
+    #         "avg_psnr_test": avg_psnr,
+    #         "avg_ssim_test": avg_ssim
+    #     })
+    #     wandb.finish()
         
 
 if __name__ == '__main__':
