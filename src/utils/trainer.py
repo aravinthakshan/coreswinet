@@ -273,5 +273,5 @@ def train_model(config):
         wandb_debug=config['wandb'], 
         device=config['device'],
         lr=config['lr'],
-        dataset_name=['dataset_name']
+        dataset_name=config['dataset_name']
     )
