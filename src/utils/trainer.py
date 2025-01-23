@@ -234,8 +234,34 @@ def train(
         # if max_psnr > psnr_threshold:
         #     print(f"PSNR threshold exceeded at epoch {epoch + 1}. Disabling N2N model.")
 
-    main_vis(test_dir)
     
+           # After the main training loop ends
+    print("\nTraining completed. Saving final models...")
+    
+    final_main_path = './main_model/final_model.pth'
+    
+    torch.save({
+        'epoch': epochs-1,
+        'model_state_dict': model.state_dict(),
+        'max_ssim': max_ssim,
+        'max_psnr': max_psnr,
+    }, final_main_path)
+    
+    if True:
+        # Create artifacts
+        main_artifact = wandb.Artifact(
+            name='final_main_model',
+            type='model',
+            description='Final state of main model'
+        )
+        main_artifact.add_file(final_main_path)
+        
+        # Log artifacts to wandb
+        wandb.log_artifact(main_artifact)
+        
+        print("Uploaded final models to wandb as artifacts")
+        
+        main_vis(test_dir)
 
 def train_model(config):
     train(
