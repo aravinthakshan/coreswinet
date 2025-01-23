@@ -20,21 +20,22 @@ def train(
     train_dir,
     test_dir,
     wandb_debug,
+    dataset_name,
+    noise_level,
     device='cuda',
     lr=3e-3,
-    dataset_name='Waterloo',
     n2n_epochs=10,
     contrastive_temperature=0.5,
       # New parameter to control when to enable bypass
 ):
-    print(dataset_name)
+    print(noise_level, dataset_name)
     # Dataset and dataloaders
     if dataset_name=='Waterloo':
-        dataset = Waterloo(root_dir=train_dir, noise_level=25, crop_size=256, num_crops=2, normalize=True,augmentation=get_training_augmentation())
+        dataset = Waterloo(root_dir=train_dir, noise_level=noise_level, crop_size=256, num_crops=2, normalize=True,augmentation=get_training_augmentation())
     elif dataset_name=='BSD':
-        dataset = BSD400(root_dir=train_dir, noise_level=25, crop_size=256, num_crops=2, normalize=True,augmentation=get_training_augmentation())
+        dataset = BSD400(root_dir=train_dir, noise_level=noise_level, crop_size=256, num_crops=2, normalize=True,augmentation=get_training_augmentation())
     elif dataset_name=='DIV2K':
-        dataset = DIV2K(root_dir=train_dir, noise_level=25, crop_size=256, num_crops=2, normalize=True,augmentation=get_training_augmentation())
+        dataset = DIV2K(root_dir=train_dir, noise_level=noise_level, crop_size=256, num_crops=2, normalize=True,augmentation=get_training_augmentation())
 
     train_size = int(0.8 * len(dataset))
     val_size = len(dataset) - train_size
@@ -273,5 +274,6 @@ def train_model(config):
         wandb_debug=config['wandb'], 
         device=config['device'],
         lr=config['lr'],
-        dataset_name=config['dataset_name']
+        dataset_name=config['dataset_name'], 
+        noise_level = config['noise_level']
     )
