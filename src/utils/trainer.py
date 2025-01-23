@@ -29,11 +29,11 @@ def train(
 ):
     # Dataset and dataloaders
     if dataset_name=='Waterloo':
-        dataset = Waterloo(root_dir=train_dir, noise_level=50, crop_size=256, num_crops=2, normalize=True,augmentation=get_training_augmentation())
+        dataset = Waterloo(root_dir=train_dir, noise_level=25, crop_size=256, num_crops=2, normalize=True,augmentation=get_training_augmentation())
     elif dataset_name=='BSD':
-        dataset = BSD400(root_dir=train_dir, noise_level=50, crop_size=256, num_crops=2, normalize=True,augmentation=get_training_augmentation())
+        dataset = BSD400(root_dir=train_dir, noise_level=25, crop_size=256, num_crops=2, normalize=True,augmentation=get_training_augmentation())
     elif dataset_name=='DIV2K':
-        dataset = DIV2K(root_dir=train_dir, noise_level=50, crop_size=256, num_crops=2, normalize=True,augmentation=get_training_augmentation())
+        dataset = DIV2K(root_dir=train_dir, noise_level=25, crop_size=256, num_crops=2, normalize=True,augmentation=get_training_augmentation())
 
     train_size = int(0.8 * len(dataset))
     val_size = len(dataset) - train_size
