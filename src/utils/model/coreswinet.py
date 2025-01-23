@@ -63,7 +63,14 @@ class Model(nn.Module):
         ])
 
         # Squeeze attention for bottleneck
-        self.bottleneck_attention = SqueezeExcitationBlock(encoder_channels[-1])
+        # self.bottleneck_attention = SqueezeExcitationBlock(encoder_channels[-1])
+        self.bottleneck_attention = SwinTransformerBlock(
+        dim=encoder_channels[-1],
+        input_resolution=(8, 8),  # 256 // (2^5) since ResNet18 has 5 stages
+        num_heads=min(8, max(1, encoder_channels[-1] // 32)),
+        window_size=4,  # Smaller window size for bottleneck
+        mlp_ratio=4.0
+        )
 
         # Contrastive heads
         self.contrastive = contrastive
@@ -137,7 +144,11 @@ class Model(nn.Module):
             processed_features.append(processed_feat)
 
         # The last processed feature becomes the bottleneck
-        bottleneck = self.bottleneck_attention(processed_features[-1])
+        B, C, H, W = processed_features[-1].shape
+        bottleneck = processed_features[-1].flatten(2).transpose(1, 2)
+        bottleneck = self.bottleneck_attention(bottleneck)
+        bottleneck = bottleneck.transpose(1, 2).reshape(B, C, H, W)
+        # bottleneck = self.bottleneck_attention(processed_features[-1])
 
         # Pass processed features into decoder as skip connections
         decoder_features = processed_features[:-1]
