@@ -85,7 +85,7 @@ def test_model(
                 total_ssim += ssim_main
                 num_batches += 1
                 
-                loader.set_postfix(psnr=psnr_main, ssim=ssim_main)
+                # loader.set_postfix(psnr=psnr_main, ssim=ssim_main)
     
     avg_psnr = total_psnr / num_batches
     avg_ssim = total_ssim / num_batches
