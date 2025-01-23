@@ -23,7 +23,7 @@ def un_tan_fi(data):
 def test(
     batch_size,
     test_dir,
-    noise_level=25,
+    noise_level=50,
     crop_size=256, 
     num_crops=34,
     device='cuda',
@@ -54,7 +54,7 @@ def test(
     if test_dataset=='CBSD68':
         dataset = CBSD68Dataset(
             root_dir=test_dir, 
-            noise_level=25,
+            noise_level=50,
             crop_size=256,
             num_crops=34,
             normalize=True,
