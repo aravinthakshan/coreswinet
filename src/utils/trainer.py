@@ -2,7 +2,7 @@ import wandb
 from torch.utils.data import DataLoader
 from utils.misc import get_metrics, visualize_epoch, un_tan_fi
 from utils.model.coreswinet import Model
-from utils.dataloader import CBSD68Dataset, Waterloo, get_training_augmentation
+from utils.dataloader import CBSD68Dataset, Waterloo,DIV2K,BSD400,get_training_augmentation
 from tqdm import tqdm
 import torch
 import torch.nn as nn
@@ -22,12 +22,19 @@ def train(
     wandb_debug,
     device='cuda',
     lr=3e-3,
+    dataset_name='BSD',
     n2n_epochs=10,
     contrastive_temperature=0.5,
       # New parameter to control when to enable bypass
 ):
     # Dataset and dataloaders
-    dataset = Waterloo(root_dir=train_dir, noise_level=50, crop_size=256, num_crops=2, normalize=True,augmentation=get_training_augmentation())
+    if dataset_name=='Waterloo':
+        dataset = Waterloo(root_dir=train_dir, noise_level=50, crop_size=256, num_crops=2, normalize=True,augmentation=get_training_augmentation())
+    elif dataset_name=='BSD':
+        dataset = BSD400(root_dir=train_dir, noise_level=50, crop_size=256, num_crops=2, normalize=True,augmentation=get_training_augmentation())
+    elif dataset_name=='DIV2K':
+        dataset = DIV2K(root_dir=train_dir, noise_level=50, crop_size=256, num_crops=2, normalize=True,augmentation=get_training_augmentation())
+
     train_size = int(0.8 * len(dataset))
     val_size = len(dataset) - train_size
     train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
@@ -239,4 +246,5 @@ def train_model(config):
         wandb_debug=config['wandb'], 
         device=config['device'],
         lr=config['lr'],
+        dataset_name=['dataset_name']
     )
