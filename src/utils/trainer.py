@@ -2,7 +2,7 @@ import wandb
 from torch.utils.data import DataLoader
 from utils.misc import get_metrics
 from utils.model.plsworkmodel import Model
-from utils.dataloader import BSD400
+from utils.dataloader import BSD400,DIV2K,CBSD68Dataset
 from tqdm import tqdm
 import torch
 import torch.nn as nn
@@ -16,19 +16,25 @@ from utils.loss import ContrastiveLoss, TextureLoss
 def train(
     epochs,
     batch_size,
-    # dataset_name,
     train_dir,
     val_dir,
     wandb_debug,
     device='cuda',
     lr=3e-3,
+    dataset_name='DIV2K',
     n2n_epochs=1000, #### CHANGE THIS BACK TO 1000
     contrastive_temperature=0.5
 ):
 
 
     # Dataset and dataloaders
-    dataset = BSD400(root_dir=train_dir, noise_level=25, crop_size=256, num_crops=34, normalize=True)
+    if dataset_name=='BSD':
+        dataset = BSD400(root_dir=train_dir, noise_level=25, crop_size=256, num_crops=34, normalize=True)
+    elif (dataset_name=='DIV2K'):
+        dataset=DIV2K(root_dir=train_dir, noise_level=25, crop_size=256, num_crops=34, normalize=True)
+    elif(dataset_name=='WaterlooED'):
+        dataset=CBSD68Dataset(root_dir=train_dir, noise_level=25, crop_size=256, num_crops=34, normalize=True)
+    
     train_size = int(0.8 * len(dataset))
     test_size = len(dataset) - train_size
     train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
@@ -315,6 +321,7 @@ def train_model(config):
         config['wandb'],
         config['device'],
         config['lr'],
+        config['dataset_name']
     )
     
 # def test(test_dir, model_path, device='cuda'):
