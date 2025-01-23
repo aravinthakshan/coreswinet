@@ -31,30 +31,30 @@ def test_model(
 ):
     # Load models
     main_model_snap, _ = load_models(
-        './snap_model/snapshot_model.pth', 
+        './kaggle/input/snap_model/pytorch/default/1/final_snapshot.pth', 
         './n2n_model/best_model_n2n.pth', 
         device
     )
-    main_model, _ = load_models(
-        './main_model/best_model.pth', 
-        './n2n_model/best_model_n2n.pth', 
-        device
-    )
+    # main_model, _ = load_models(
+    #     './main_model/best_model.pth', 
+    #     './n2n_model/best_model_n2n.pth', 
+    #     device
+    # )
 
     # Set model states
-    for model in [main_model_snap, main_model]:
+    for model in [main_model_snap]:
         model.to(device)
         model.eval()
 
     # Set bypass states after loading
     main_model_snap.bypass_second = True 
-    main_model.bypass_first = True
+    # main_model.bypass_first = True
     print("Models loaded and bypass states set!")
     
     # Initialize dataset and metrics
     dataset = CBSD68Dataset(
         root_dir=test_dir, 
-        noise_level=noise_level,
+        noise_level=15,
         crop_size=crop_size,
         num_crops=num_crops,
         normalize=True,
@@ -75,8 +75,9 @@ def test_model(
                 
                 gt = un_tan_fi(clean)
                 main_model_snap_out, _, _ = main_model_snap(noise, gt)
-                x = un_tan_fi(main_model_snap_out)
-                output_main, _, _ = main_model(noise, x)
+                # x = un_tan_fi(main_model_snap_out)
+                # output_main, _, _ = main_model(noise, x)
+                output_main = main_model_snap_out
                 
                 psnr_main, ssim_main = get_metrics(clean, output_main, psnr_metric, ssim_metric)
                 
