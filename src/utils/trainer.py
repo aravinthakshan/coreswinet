@@ -20,20 +20,22 @@ def train(
     train_dir,
     test_dir,
     wandb_debug,
+    dataset_name,
+    noise_level,
     device='cuda',
     lr=3e-3,
-    dataset_name='BSD',
     n2n_epochs=10,
     contrastive_temperature=0.5,
       # New parameter to control when to enable bypass
 ):
+    print(noise_level, dataset_name)
     # Dataset and dataloaders
     if dataset_name=='Waterloo':
-        dataset = Waterloo(root_dir=train_dir, noise_level=50, crop_size=256, num_crops=2, normalize=True,augmentation=get_training_augmentation())
+        dataset = Waterloo(root_dir=train_dir, noise_level=noise_level, crop_size=256, num_crops=2, normalize=True,augmentation=get_training_augmentation())
     elif dataset_name=='BSD':
-        dataset = BSD400(root_dir=train_dir, noise_level=50, crop_size=256, num_crops=2, normalize=True,augmentation=get_training_augmentation())
+        dataset = BSD400(root_dir=train_dir, noise_level=noise_level, crop_size=256, num_crops=2, normalize=True,augmentation=get_training_augmentation())
     elif dataset_name=='DIV2K':
-        dataset = DIV2K(root_dir=train_dir, noise_level=50, crop_size=256, num_crops=2, normalize=True,augmentation=get_training_augmentation())
+        dataset = DIV2K(root_dir=train_dir, noise_level=noise_level, crop_size=256, num_crops=2, normalize=True,augmentation=get_training_augmentation())
 
     train_size = int(0.8 * len(dataset))
     val_size = len(dataset) - train_size
@@ -234,8 +236,34 @@ def train(
         # if max_psnr > psnr_threshold:
         #     print(f"PSNR threshold exceeded at epoch {epoch + 1}. Disabling N2N model.")
 
-    main_vis(test_dir)
     
+           # After the main training loop ends
+    print("\nTraining completed. Saving final models...")
+    
+    final_main_path = './main_model/final_model.pth'
+    
+    torch.save({
+        'epoch': epochs-1,
+        'model_state_dict': model.state_dict(),
+        'max_ssim': max_ssim,
+        'max_psnr': max_psnr,
+    }, final_main_path)
+    
+    if True:
+        # Create artifacts
+        main_artifact = wandb.Artifact(
+            name='final_main_model',
+            type='model',
+            description='Final state of main model'
+        )
+        main_artifact.add_file(final_main_path)
+        
+        # Log artifacts to wandb
+        wandb.log_artifact(main_artifact)
+        
+        print("Uploaded final models to wandb as artifacts")
+        
+        main_vis(test_dir)
 
 def train_model(config):
     train(
@@ -246,5 +274,6 @@ def train_model(config):
         wandb_debug=config['wandb'], 
         device=config['device'],
         lr=config['lr'],
-        dataset_name=['dataset_name']
+        dataset_name=config['dataset_name'], 
+        noise_level = config['noise_level']
     )
