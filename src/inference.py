@@ -31,7 +31,7 @@ def test_model(
 ):
     # Load models
     main_model_snap, _ = load_models(
-        './kaggle/input/snap_model/pytorch/default/1/final_snapshot.pth', 
+        '/kaggle/input/snap_model/pytorch/default/1/final_snapshot.pth', 
         './n2n_model/best_model_n2n.pth', 
         device
     )
