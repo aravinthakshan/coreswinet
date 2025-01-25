@@ -326,10 +326,12 @@ class DIV2K(Dataset):
 
     def __len__(self):
         # return 30
+        print("looks good")
         return len(self.image_pairs)
 
     def __getitem__(self, idx):
         # return 4
+        
         noisy, clean = self.image_pairs[idx]
         return noisy, clean
 
