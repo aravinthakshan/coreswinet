@@ -18,7 +18,7 @@ class Model(nn.Module):
         # First encoder (for noisy input)
         self.unet1 = smp.Unet(
             encoder_name="resnet18",
-            encoder_weights=None,
+            encoder_weights="imagenet",
             in_channels=in_channels,
             classes=16,
             decoder_channels=(512, 256, 128, 64, 64),
