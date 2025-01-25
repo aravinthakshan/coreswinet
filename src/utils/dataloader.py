@@ -287,15 +287,15 @@ class DIV2K(Dataset):
         self.normalize = normalize
         self.tanfi = tanfi
         self.augmentation=augmentation
-        print(f"Original directory: {self.original_dir}")
-        print(f"Noisy directory: {self.noisy_dir}")
-        print(f"Files in original dir: {os.listdir(self.original_dir)}")
+
 
         self.original_dir = os.path.join(root_dir, "DIV2K_noisy_0")
         self.noisy_dir = os.path.join(root_dir, "DIV2K_noisy_"+self.noise_level)
 
         self.image_paths = [fname for fname in os.listdir(self.original_dir) if fname.endswith('.png')]
-
+        print(f"Original directory: {self.original_dir}")
+        print(f"Noisy directory: {self.noisy_dir}")
+        print(f"Files in original dir: {os.listdir(self.original_dir)}")
         self.image_pairs = []
         for img_name in self.image_paths:
             clean_path = os.path.join(self.original_dir, img_name)
