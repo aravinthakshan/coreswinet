@@ -98,19 +98,19 @@ class Model(nn.Module):
             swin_out = swin_block(feat_reshaped)
             return swin_out.transpose(1, 2).reshape(B, C, H, W)
 
-    def forward(self, x_noisy, x_n2n):
+    def forward(self, x_noisy, enc2_in):
         """
         Forward pass of the model
         Args:
             x_noisy (torch.Tensor): Noisy input image
-            x_n2n (torch.Tensor): N2N denoised version of the input image
+            enc2_in (torch.Tensor): N2N denoised version of the input image
         """
         # Get features from first encoder
         features1 = list(self.encoder1(x_noisy))
         
         # Get features from second encoder only if not bypassing
         if not self.bypass:
-            features2 = list(self.encoder2(x_n2n))
+            features2 = list(self.encoder2(enc2_in))
         else:
             features2 = features1  # Dummy assignment, won't be used
 
@@ -230,10 +230,10 @@ class Model(nn.Module):
 #             nn.Tanh()
 #         )
 
-#     def forward(self, x_noisy, x_n2n):
+#     def forward(self, x_noisy, enc2_in):
 #         # Get features from encoders
 #         features1 = list(self.encoder1(x_noisy))
-#         features2 = list(self.encoder2(x_n2n)) if not self.bypass else features1
+#         features2 = list(self.encoder2(enc2_in)) if not self.bypass else features1
 
 #         # Process features
 #         processed_features = []
