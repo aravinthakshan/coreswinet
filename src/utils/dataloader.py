@@ -286,6 +286,7 @@ class DIV2K(Dataset):
         self.num_crops = num_crops
         self.normalize = normalize
         self.tanfi = tanfi
+        self.augmentation=augmentation
 
         self.original_dir = os.path.join(root_dir, "DIV2K_noisy_0")
         self.noisy_dir = os.path.join(root_dir, "DIV2K_noisy_"+self.noise_level)
