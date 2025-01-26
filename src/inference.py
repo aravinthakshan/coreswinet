@@ -40,14 +40,12 @@ def test(
             "num_crops": num_crops
         })
     
-    main_model, n2n_model = load_models(
+    main_model = load_models(
         './main_model/best_model.pth', 
-        './n2n_model/best_model_n2n.pth', 
         device
     )
 
     main_model.to(device).eval()
-    n2n_model.to(device).eval()
     
     main_model.bypass = True 
     print("Main Model Bypass!")
@@ -116,7 +114,7 @@ def test_model(config):
         config['wandb'],
         config['device'], 
         config['noise_level'],
-        config['test_dataset']
+        # config['test_dataset']
     )
     
     
