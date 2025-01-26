@@ -4,27 +4,29 @@ import argparse
 import wandb
 
 def main(args):
-    config={
-        'epochs' : args.epochs,
-        'train_dir' : args.train_dir,
-        'test_dir' : args.test_dir,
-        'batch_size' : args.batch_size,
-        'device' : args.device,
-        'lr' : args.lr,
+    config = {
+        'epochs': args.epochs,
+        'train_dir': args.train_dir,
+        'test_dir': args.test_dir,
+        'batch_size': args.batch_size,
+        'device': args.device,
+        'lr': args.lr,
         'wandb': args.wandbd,
         'noise_level': args.noise_level,
-        'dataset_name':args.dataset_name
+        'dataset_name': args.dataset_name
     }
+    
     if args.wandbd:
         wandb.login(key=args.key)
         wandb.init(
-            project = "DeFInet",
-            config = {
+            project="DeFInet",
+            config={
                 "Epochs": args.epochs,
                 "Batch Size": args.batch_size,
                 "Learning Rate": args.lr
             }
         )
+    
     train_model(config)
     test_model(config)
     

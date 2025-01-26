@@ -49,8 +49,8 @@ def test(
     
     main_model.bypass = True 
     print("Main Model Bypass!")
-    if test_dataset=='CBSD68':
-        dataset = CBSD68Dataset(
+    
+    dataset = CBSD68Dataset(
             root_dir=test_dir, 
             noise_level=25,
             crop_size=256,
