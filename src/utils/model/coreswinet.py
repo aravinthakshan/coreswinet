@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import segmentation_models_pytorch as smp
 from einops import rearrange
 # from archs.AttentionModules import SqueezeExcitationBlock
-# from archs.EEF import AFEBlock
+# from archs.EEF import AFEBlock, DHA
 from utils.model.archs.AttentionModules import SqueezeExcitationBlock
 from utils.model.archs.EEF import AFEBlock, DHA
 from torchsummary import summary
@@ -43,8 +43,8 @@ class Model(nn.Module):
         ])
 
         # Bottleneck attention remains unchanged
-        self.bottleneck_attention = SqueezeExcitationBlock(encoder_channels[-1])
-        #self.bottleneck_attention = DHA(encoder_channels[-1])
+        # self.bottleneck_attention = SqueezeExcitationBlock(encoder_channels[-1])
+        self.bottleneck_attention = DHA(encoder_channels[-1])
 
         # Contrastive heads
         self.contrastive = contrastive
