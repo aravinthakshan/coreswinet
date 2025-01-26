@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import segmentation_models_pytorch as smp
 from einops import rearrange
-from archs.AttentionModules import SqueezeExcitationBlock
+from utils.model.archs.AttentionModules import SqueezeExcitationBlock
 from torchsummary import summary
 from utils.model.archs.EEF import AFEBlock
 
