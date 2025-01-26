@@ -54,7 +54,7 @@ def test_model(
     # Initialize dataset and metrics
     dataset = CBSD68Dataset(
         root_dir='/kaggle/input/cbsd68/CBSD68', 
-        noise_level=50,
+        noise_level=25,
         crop_size=crop_size,
         num_crops=num_crops,
         normalize=True,
