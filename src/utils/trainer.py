@@ -114,12 +114,6 @@ def train(
         with tqdm(train_loader, desc=f"Epoch {epoch+1}/{epochs} - Training Progress") as loader:
             for itr, batch_data in enumerate(loader):
                 noise, clean = [x.to(device) for x in batch_data]
-                
-                # if use_n2n:
-                #     with torch.no_grad():
-                #         n2n_output = n2n_model.denoise(noise)
-                # else:
-                #     n2n_output = noise
 
                 
                 n2n_output = un_tan_fi(clean)# feeding ground truth  
@@ -183,10 +177,6 @@ def train(
                 for batch_data in loader:
                     noise, clean = [x.to(device) for x in batch_data]        
 
-                    # if use_n2n:
-                    #     n2n_output = n2n_model.denoise(noise)
-                    # else:
-                    #     n2n_output = noise
                     n2n_output = un_tan_fi(clean) ##note
                     output, _, _ = model(noise, n2n_output)
                     psnr_val_itr, ssim_val_itr = get_metrics(clean, output, psnr_metric, ssim_metric)
@@ -231,12 +221,7 @@ def train(
             if wandb_debug:
                 # visualize_epoch(model, n2n_model, val_loader, device, epoch, wandb_debug)
                 wandb.log(logger)
-        
-        # # Check if max_psnr exceeds threshold
-        # if max_psnr > psnr_threshold:
-        #     print(f"PSNR threshold exceeded at epoch {epoch + 1}. Disabling N2N model.")
 
-    
            # After the main training loop ends
     print("\nTraining completed. Saving final models...")
     
@@ -263,7 +248,7 @@ def train(
         
         print("Uploaded final models to wandb as artifacts")
         
-        main_vis(test_dir)
+        # main_vis(test_dir)
 
 def train_model(config):
     train(
