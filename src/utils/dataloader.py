@@ -334,3 +334,211 @@ class DIV2K(Dataset):
             clean_crop = tan_fi(clean_crop)
 
         return noisy_crop, clean_crop
+import os
+import random
+import torch
+import torch.nn as nn
+from torch.utils.data import Dataset, DataLoader, random_split
+from PIL import Image
+import torchvision.transforms as transforms
+import torchvision.transforms.functional as TF
+from utils.misc import dct_2d
+import matplotlib.pyplot as plt
+import cv2
+import numpy as np
+import scipy.io
+import albumentations as A
+
+class SIDD(Dataset):
+    def __init__(self, data_dir, transform=None, size=256, normalize=False, standardize=False, mode="train"):
+        self.mode = mode
+        self.transform = transform
+        self.size = size
+        self.normalize = normalize
+        self.standardize = standardize
+
+        if mode == "train":
+            self.data_dir = data_dir
+            self.image_pairs = []
+            for root, _, files in os.walk(data_dir):
+                gt_file = next((f for f in files if "GT_SRGB" in f), None)
+                noisy_file = next((f for f in files if "NOISY_SRGB" in f), None)
+                if gt_file and noisy_file:
+                    self.image_pairs.append((
+                        os.path.join(root, noisy_file),
+                        os.path.join(root, gt_file)
+                    ))
+        
+        elif mode == "val":
+            self.noisy_data = scipy.io.loadmat(os.path.join(data_dir, 'ValidationNoisyBlocksSrgb.mat'))['ValidationNoisyBlocksSrgb']
+            self.gt_data = scipy.io.loadmat(os.path.join(data_dir, 'ValidationGtBlocksSrgb.mat'))['ValidationGtBlocksSrgb']
+        
+        elif mode == "test":
+            self.data_dir = data_dir
+            file_path = os.path.join(data_dir, f'SIDD_Benchmark_Code_v1.2/SIDD_Benchmark_Code_v1.2/BenchmarkBlocks32.mat')
+            data = scipy.io.loadmat(file_path)
+            
+            if 'BenchmarkBlocks32' in data:
+                self.crop_coordinates = data['BenchmarkBlocks32']
+            else:
+                raise ValueError("Dataset key 'BenchmarkBlocks32' not found in the .mat file.")
+
+            self.image_pairs = []
+            benchmark_data_path = os.path.join(data_dir, "SIDD_Benchmark_Data", "SIDD_Benchmark_Data")
+            if not os.path.exists(benchmark_data_path):
+                raise ValueError(f"SIDD_Benchmark_Data directory not found in {data_dir}")
+            
+            for scene_folder in os.listdir(benchmark_data_path):
+                scene_path = os.path.join(benchmark_data_path, scene_folder)
+                if os.path.isdir(scene_path):
+                    scene_folder = scene_folder.split("_")
+                    noisy_path = os.path.join(scene_path, f"{scene_folder[0]}_NOISY_SRGB_010.PNG")
+                    if os.path.exists(noisy_path):
+                        self.image_pairs.append(noisy_path)
+            
+            if len(self.image_pairs) == 0:
+                raise ValueError(f"No valid image files found in {data_dir}")
+        
+        else:
+            raise ValueError("Mode must be 'train', 'val', or 'test'")
+
+    def __len__(self):
+        if self.mode == "train":
+            return len(self.image_pairs)
+        elif self.mode == "val":
+            return self.noisy_data.shape[0] * self.noisy_data.shape[1]
+        elif self.mode == "test":
+            return len(self.image_pairs) * 32  # 32 crops per image
+
+    def __getitem__(self, idx):
+        if self.mode == "train":
+            noisy_path, gt_path = self.image_pairs[idx]
+            noisy = cv2.imread(noisy_path)
+            noiseless = cv2.imread(gt_path)
+            noisy_cropped, noiseless_cropped = self.get_cropped_images(noisy, noiseless, self.size)
+            noisy_img, noiseless_img = self.rotate_images(noisy_cropped, noiseless_cropped)
+            
+        elif self.mode == "val":
+            block_idx = idx // self.noisy_data.shape[1]
+            patch_idx = idx % self.noisy_data.shape[1]
+            noisy_img = self.noisy_data[block_idx, patch_idx]
+            noiseless_img = self.gt_data[block_idx, patch_idx]
+        
+        elif self.mode == "test":
+            image_idx = idx // 32
+            crop_idx = idx % 32
+            noisy_path = self.image_pairs[image_idx]
+            noisy = cv2.imread(noisy_path)
+            noisy = cv2.cvtColor(noisy, cv2.COLOR_BGR2RGB)
+            crop_coords = self.crop_coordinates[crop_idx]
+            noisy_img = self.crop_image(noisy, crop_coords)
+            noiseless_img = None  # No ground truth for test mode
+
+        # Convert to torch tensor and change dimension order from HWC to CHW
+        noisy_img = torch.tensor(noisy_img, dtype=torch.float32).permute(2, 0, 1)
+        if noiseless_img is not None:
+            noiseless_img = torch.tensor(noiseless_img, dtype=torch.float32).permute(2, 0, 1)
+        
+        if self.normalize:
+            noisy_img = self.normalize_image(noisy_img)
+            if noiseless_img is not None:
+                noiseless_img = self.normalize_image(noiseless_img)
+        
+        if self.standardize:
+            noisy_img = self.standardize_image(noisy_img)
+            if noiseless_img is not None:
+                noiseless_img = self.standardize_image(noiseless_img)
+        
+        high, low = self.return_freq(noisy_img)
+        
+        if self.mode == "test":
+            return noisy_img, high, low
+            
+        else:
+            return noisy_img, noiseless_img, high, low
+
+    def get_cropped_images(self, img1, img2, size=256):
+        #img1 = img1.astype(np.uint8)
+        #img2 = img2.astype(np.uint8)
+
+        # Apply Albumentations
+        augment = A.Compose([
+            A.RandomCrop(width=size, height=size),
+        ], additional_targets={'image1': 'image'})
+        
+        augmented = augment(image=img1, image1=img2)
+        img1_cropped = augmented['image']
+        img2_cropped = augmented['image1']
+        
+        return img1_cropped, img2_cropped
+
+    def rotate_images(self, img1, img2):
+        angles = [0, 90, 180, 270]
+        angle = random.choice(angles)
+        img1_rotated = Image.fromarray(img1).rotate(angle, expand=True)
+        img2_rotated = Image.fromarray(img2).rotate(angle, expand=True)
+        return np.array(img1_rotated), np.array(img2_rotated)
+
+    def return_freq(self, img):
+        freq = img.unsqueeze(0)
+        freq = dct_2d(freq).squeeze(0)
+        freq = freq / 7.0
+        high, low = self.freq_decompose(freq)
+        return high, low
+
+    def freq_decompose(self, freq):
+        freq_y = freq[0:64, :, :]
+        freq_Cb = freq[64:128, :, :]
+        freq_Cr = freq[128:192, :, :]
+        high = torch.cat([freq_y[32:, :, :], freq_Cb[32:, :, :], freq_Cr[32:, :, :]], dim=0)
+        low = torch.cat([freq_y[:32, :, :], freq_Cb[:32, :, :], freq_Cr[:32, :, :]], dim=0)
+        return high, low
+
+    def normalize_image(self, img):
+        return img.float() / 255.0
+
+    def standardize_image(self, img):
+        normalize = transforms.Normalize(mean=[0.2400, 0.2518, 0.3112],
+                                         std=[0.0892, 0.0785, 0.1011])
+        
+        standardized_img = normalize(img)
+        
+        return standardized_img
+    
+    def crop_image(self, image, crop_coords):
+        y, x, h, w = crop_coords
+        return image[y:y+h, x:x+w]
+
+# # Usage example
+# if __name__ == "__main__":
+#     # Paths to your data
+#     train_data_dir = "/path/to/train/data"
+#     val_data_dir = "/path/to/val/data"
+#     test_data_dir = "/path/to/test/data"
+    
+
+    
+#     # Create datasets
+#     train_dataset = SIDD(train_data_dir, mode="train")
+#     val_dataset = SIDD(val_data_dir, mode="val")
+#     test_dataset = SIDD(test_data_dir, mode="test", crop_coordinates=crop_coords_list)
+    
+#     # Create dataloaders
+#     train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+#     val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
+#     test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
+    
+#     # Visualize individual samples from train dataset
+#     visualize_sidd(train_dataset, num_samples=4)
+    
+#     # Visualize a batch from train dataloader
+#     visualize_sidd(train_loader, batch=True)
+    
+#     # Visualize specific samples from val dataset
+#     visualize_sidd(val_dataset, indices=[0, 10, 20, 30])
+    
+#     # Visualize a batch from val dataloader
+#     visualize_sidd(val_loader, batch=True)
+    
+#     # Visualize a batch from test dataloader
+#     visualize_sidd(test_loader, batch=True)
