@@ -36,7 +36,7 @@ if __name__ == '__main__':
     parser.add_argument('--device', type=str, required=False, default='cuda')
     
     parser.add_argument('--train_dir', type=str, required=True)
-    parser.add_argument('--test_dir', type=str, required=True)
+    parser.add_argument('--test_dir', type=str, required=False, default='/kaggle/input/d/aryamangupta04/cbsd68/CBSD68')
     parser.add_argument('--noise_level', type=int, required=False, default=50)
     
     parser.add_argument('--wandbd', type=bool ,default=True)

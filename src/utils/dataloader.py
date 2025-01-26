@@ -238,8 +238,8 @@ class Waterloo(Dataset):
                 self.image_pairs.append((noisy_crop, clean_crop))
                 
     def __len__(self):
-        # return 100
-        return len(self.image_pairs)
+        return 100
+        # return len(self.image_pairs)
 
     def __getitem__(self, idx):
         noisy, clean = self.image_pairs[idx]
@@ -278,6 +278,7 @@ def get_training_augmentation():
         albu.Rotate(limit=[270, 270], p=0.5)
     ]
     return albu.Compose(train_transform, additional_targets={'image1': 'image'})
+
 class DIV2K(Dataset):
     def __init__(self, root_dir, noise_level=25, crop_size=256, num_crops=32, normalize=True, tanfi=True,augmentation=None):
         self.root_dir = root_dir

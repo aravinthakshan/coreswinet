@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from utils.model.coreswinet import Model  
 from utils.model.archs.ZSN2N import N2NNetwork
 
-def load_models(main_model_path, n2n_model_path, device):
+def load_models(main_model_path, device):
     """Loads the main model and n2n model from separate checkpoints."""
     
     # Load main model checkpoint
@@ -17,20 +17,13 @@ def load_models(main_model_path, n2n_model_path, device):
     main_model.load_state_dict(main_checkpoint['model_state_dict'])
     print(f"Loaded main model state dict from {main_model_path}.")
     
-    # Load n2n model checkpoint
-    n2n_checkpoint = torch.load(n2n_model_path, map_location=device)
-    n2n_model = N2NNetwork()  # Initialize n2n model
-    n2n_model.load_state_dict(n2n_checkpoint['model_state_dict'])
-    print(f"Loaded n2n model state dict from {n2n_model_path}.")
-    
     max_ssim = main_checkpoint['max_ssim']  # Or use n2n_checkpoint, if you prefer
     max_psnr = main_checkpoint['max_psnr']
     epoch = main_checkpoint['epoch']
     
     print(f"Loaded max_ssim: {max_ssim}, max_psnr: {max_psnr}, epoch: {epoch}.")
     
-    return main_model, n2n_model
-
+    return main_model
 
 def un_tan_fi(data):
     d = data.clone()
@@ -102,14 +95,12 @@ def main_vis(test_dir, use_wandb=True, noise_level=25, crop_size=256, num_crops=
             "num_crops": num_crops
         })
     
-    main_model, n2n_model = load_models(
+    main_model = load_models(
     './main_model/best_model.pth', 
-    './n2n_model/best_model_n2n.pth', 
     device
 )
 
     main_model.to(device).eval()
-    n2n_model.to(device).eval()
     
     main_model.bypass = True 
     print("Main Model Bypass ! ")
@@ -137,7 +128,6 @@ def main_vis(test_dir, use_wandb=True, noise_level=25, crop_size=256, num_crops=
         noise, clean = noise.to(device), clean.to(device)
         
         with torch.no_grad():
-        #    output_n2n = n2n_model.denoise(noise)
             output_n2n = un_tan_fi(clean)
             output_main, _, _ = main_model(noise, output_n2n)
         

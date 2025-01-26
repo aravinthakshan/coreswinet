@@ -45,15 +45,6 @@ def train(
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
     bypass_epoch = 20
     
-    print(f"Images per epoch Train: {len(train_loader) * train_loader.batch_size}")
-    print(f"Images per epoch Val: {len(val_loader) * val_loader.batch_size}")
-    # Train N2N model
-    print("Training N2N model...")
-    model = N2NNetwork()  ### N2N
-    n2n_model, psnr_threshold = train_n2n(epochs=n2n_epochs, model=model, dataloader=train_loader)
-    print("PSNR THRESHOLD:", psnr_threshold)
-    n2n_model.eval()
-
     # Initialize main model with bypass parameter
     model = Model(in_channels=3, contrastive=True, bypass=False).to(device)
     
@@ -205,14 +196,7 @@ def train(
                 }, './main_model/best_model.pth')
                 print(f"Saved main model at epoch {epoch}.")
                 
-                torch.save({
-                    'epoch': epoch,
-                    'model_state_dict': n2n_model.state_dict(),
-                    'max_ssim': max_ssim,
-                    'max_psnr': max_psnr,
-                }, './n2n_model/best_model_n2n.pth')
                 
-                print(f"Saved n2n model at epoch {epoch}.")
                 print(f"Saved Models at epoch {epoch}.")
                 
             print(f"\nVal PSNR: {psnr_val:.4f}")
