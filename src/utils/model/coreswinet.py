@@ -3,9 +3,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 import segmentation_models_pytorch as smp
 from einops import rearrange
+# from archs.AttentionModules import SqueezeExcitationBlock
+# from archs.EEF import AFEBlock
 from utils.model.archs.AttentionModules import SqueezeExcitationBlock
-from torchsummary import summary
 from utils.model.archs.EEF import AFEBlock
+from torchsummary import summary
+
 
 class Model(nn.Module):
     def __init__(self, in_channels=3, contrastive=True, bypass=False):
@@ -112,22 +115,22 @@ if __name__ == "__main__":
     model_normal = Model(in_channels=3).to(device)
     model_bypass = Model(in_channels=3).to(device)
     
-    batch_size = 2
+    batch_size = 16
     dummy_input = torch.randn(batch_size, 3, 256, 256).to(device)
     dummy_n2n = torch.randn(batch_size, 3, 256, 256).to(device)
 
-    # # Print model summary using torchsummary for two inputs
-    print("\nModel Summary (Normal Mode):")
-    summary(model_normal, input_size=[(3, 256, 256), (3, 256, 256)], device=device)
+    # # # Print model summary using torchsummary for two inputs
+    # print("\nModel Summary (Normal Mode):")
+    # summary(model_normal, input_size=[(3, 256, 256), (3, 256, 256)], device=device)
 
     # Test both modes
     output_normal = model_normal(dummy_input, dummy_n2n)
     output_bypass = model_bypass(dummy_input, dummy_n2n)
 
-    # if isinstance(output_normal, tuple):
-    #     print(f"Normal mode output shape: {output_normal[0].shape}")
-    #     print(f"Normal mode contrastive feature shapes: {output_normal[1].shape}, {output_normal[2].shape}")
+    if isinstance(output_normal, tuple):
+        print(f"Normal mode output shape: {output_normal[0].shape}")
+        print(f"Normal mode contrastive feature shapes: {output_normal[1].shape}, {output_normal[2].shape}")
     
-    # if isinstance(output_bypass, tuple):
-    #     print(f"Bypass mode output shape: {output_bypass[0].shape}")
-    #     print(f"Bypass mode contrastive feature shapes: {output_bypass[1].shape}, {output_bypass[2].shape}")
+    if isinstance(output_bypass, tuple):
+        print(f"Bypass mode output shape: {output_bypass[0].shape}")
+        print(f"Bypass mode contrastive feature shapes: {output_bypass[1].shape}, {output_bypass[2].shape}")

@@ -65,22 +65,22 @@ class EFF(nn.Module):
             nn.Conv2d(dim, dim, groups=dim, kernel_size=3, stride=1, padding=1),
             nn.LeakyReLU(inplace=True))
         self.linear2 = nn.Sequential(nn.Linear(dim, out_dim))
-
+        
     def forward(self, x, H, W):
         bs, hw, c = x.size()
         x = self.linear1(x)
         x = rearrange(x, 'b (h w) c -> b c h w', h=H, w=W)
         sht = x
         l, m, h = self.DF(x)
-        # Ensure channel dimensions match before concatenation and convolution
         x = torch.cat((l, m, h), dim=1)
-        x = nn.Conv2d(x.size(1), sht.size(1), 1)(x)  # Adjust channels to match shortcut
+        conv = nn.Conv2d(x.size(1), sht.size(1), 1).to(x.device)  # Move to same device
+        x = conv(x)
         x = self.dwconv(x)
         x = x + sht
         x = rearrange(x, 'b c h w -> b (h w) c', h=H, w=W)
         x = self.linear2(x)
         return x
-
+    
 class AFEBlock(nn.Module):
     def __init__(self, dim, out_dim):
         super().__init__()
