@@ -43,8 +43,8 @@ class Model(nn.Module):
         ])
 
         # Bottleneck attention remains unchanged
-        # self.bottleneck_attention = SqueezeExcitationBlock(encoder_channels[-1])
-        self.bottleneck_attention = DHA(encoder_channels[-1])
+        self.bottleneck_attention = SqueezeExcitationBlock(encoder_channels[-1])
+        # self.bottleneck_attention = DHA(encoder_channels[-1])
 
         # Contrastive heads
         self.contrastive = contrastive
