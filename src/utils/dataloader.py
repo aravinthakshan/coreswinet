@@ -447,14 +447,7 @@ class SIDD(Dataset):
             noisy_img = self.standardize_image(noisy_img)
             if noiseless_img is not None:
                 noiseless_img = self.standardize_image(noiseless_img)
-        
-        high, low = self.return_freq(noisy_img)
-        
-        if self.mode == "test":
-            return noisy_img, high, low
-            
-        else:
-            return noisy_img, noiseless_img, high, low
+        return noisy_img, noiseless_img
 
     def get_cropped_images(self, img1, img2, size=256):
         #img1 = img1.astype(np.uint8)
