@@ -109,14 +109,13 @@ def test(
 
 def test_model(config):
     test(
-        config['batch_size'],
-        config['test_dir'],
-        config['wandb'],
-        config['device'], 
-        config['noise_level'],
-        # config['test_dataset']
+        batch_size=config['batch_size'],
+        test_dir=config['test_dir'],
+        noise_level=config['noise_level'],
+        device=config['device'],
+        use_wandb=config['wandb'],
+        test_dataset=config.get('dataset_name', 'CBSD68')  # Added with default
     )
-    
     
 # def preprocess_image(img_path, device):
 #     # Open the image and convert it to RGB
