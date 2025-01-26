@@ -342,12 +342,11 @@ from torch.utils.data import Dataset, DataLoader, random_split
 from PIL import Image
 import torchvision.transforms as transforms
 import torchvision.transforms.functional as TF
-from utils.misc import dct_2d
 import matplotlib.pyplot as plt
 import cv2
 import numpy as np
 import scipy.io
-import albumentations as A
+
 
 class SIDD(Dataset):
     def __init__(self, data_dir, transform=None, size=256, normalize=False, standardize=False, mode="train"):
@@ -462,8 +461,8 @@ class SIDD(Dataset):
         #img2 = img2.astype(np.uint8)
 
         # Apply Albumentations
-        augment = A.Compose([
-            A.RandomCrop(width=size, height=size),
+        augment = albu.Compose([
+            albu.RandomCrop(width=size, height=size),
         ], additional_targets={'image1': 'image'})
         
         augmented = augment(image=img1, image1=img2)
@@ -478,21 +477,6 @@ class SIDD(Dataset):
         img1_rotated = Image.fromarray(img1).rotate(angle, expand=True)
         img2_rotated = Image.fromarray(img2).rotate(angle, expand=True)
         return np.array(img1_rotated), np.array(img2_rotated)
-
-    def return_freq(self, img):
-        freq = img.unsqueeze(0)
-        freq = dct_2d(freq).squeeze(0)
-        freq = freq / 7.0
-        high, low = self.freq_decompose(freq)
-        return high, low
-
-    def freq_decompose(self, freq):
-        freq_y = freq[0:64, :, :]
-        freq_Cb = freq[64:128, :, :]
-        freq_Cr = freq[128:192, :, :]
-        high = torch.cat([freq_y[32:, :, :], freq_Cb[32:, :, :], freq_Cr[32:, :, :]], dim=0)
-        low = torch.cat([freq_y[:32, :, :], freq_Cb[:32, :, :], freq_Cr[:32, :, :]], dim=0)
-        return high, low
 
     def normalize_image(self, img):
         return img.float() / 255.0
