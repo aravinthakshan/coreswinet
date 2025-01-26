@@ -115,8 +115,8 @@ def main_vis(test_dir, use_wandb=True, noise_level=25, crop_size=256, num_crops=
     print("Main Model Bypass ! ")
     
     dataset = CBSD68Dataset(
-        root_dir=test_dir, 
-        noise_level=50, 
+        root_dir='/kaggle/input/cbsd68/CBSD68', 
+        noise_level=25, 
         crop_size=crop_size, 
         num_crops=num_crops,
         normalize=True,
