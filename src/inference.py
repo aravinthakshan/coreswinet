@@ -31,7 +31,7 @@ def test_model(
 ):
     # Load models
     main_model_snap, _ = load_models(
-        '/kaggle/input/justsw/final_model (2).pth', 
+        '/kaggle/input/trained-div2k/final_model (3).pth', 
         './n2n_model/best_model_n2n.pth', 
         device
     )
@@ -54,7 +54,7 @@ def test_model(
     # Initialize dataset and metrics
     dataset = CBSD68Dataset(
         root_dir='/kaggle/input/cbsd68/CBSD68', 
-        noise_level=25,
+        noise_level=50,
         crop_size=crop_size,
         num_crops=num_crops,
         normalize=True,

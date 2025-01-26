@@ -9,18 +9,6 @@ from utils.model.archs.ZSN2N import N2NNetwork
 # from archs.SwinBlocks import SwinTransformerBlock
 # from archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
 
-class PReLUBlock(nn.Module):
-    def __init__(self, channels):
-        super().__init__()
-        self.block = nn.Sequential(
-            nn.Conv2d(channels, channels, kernel_size=3, stride=1, padding=1),
-            nn.PReLU(),
-            nn.Conv2d(channels, channels, kernel_size=3, stride=1, padding=1),
-            nn.PReLU(),
-        )
-    
-    def forward(self, x):
-        return self.block(x)
     
 class Model(nn.Module):
     def __init__(self, in_channels=3, contrastive=True, bypass=False):
@@ -63,14 +51,7 @@ class Model(nn.Module):
         ])
 
         # Squeeze attention for bottleneck
-        # self.bottleneck_attention = SqueezeExcitationBlock(encoder_channels[-1])
-        self.bottleneck_attention = SwinTransformerBlock(
-        dim=encoder_channels[-1],
-        input_resolution=(8, 8),  # 256 // (2^5) since ResNet18 has 5 stages
-        num_heads=min(8, max(1, encoder_channels[-1] // 32)),
-        window_size=4,  # Smaller window size for bottleneck
-        mlp_ratio=4.0
-        )
+        self.bottleneck_attention = SqueezeExcitationBlock(encoder_channels[-1])
 
         # Contrastive heads
         self.contrastive = contrastive
@@ -142,13 +123,9 @@ class Model(nn.Module):
                 self.swin_blocks[i]
             )
             processed_features.append(processed_feat)
-
+            
         # The last processed feature becomes the bottleneck
-        B, C, H, W = processed_features[-1].shape
-        bottleneck = processed_features[-1].flatten(2).transpose(1, 2)
-        bottleneck = self.bottleneck_attention(bottleneck)
-        bottleneck = bottleneck.transpose(1, 2).reshape(B, C, H, W)
-        # bottleneck = self.bottleneck_attention(processed_features[-1])
+        bottleneck = self.bottleneck_attention(processed_features[-1])
 
         # Pass processed features into decoder as skip connections
         decoder_features = processed_features[:-1]
@@ -318,6 +295,8 @@ class Model(nn.Module):
 
 
 
+
+
 if __name__ == "__main__":
     # Set the device
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -330,12 +309,12 @@ if __name__ == "__main__":
     dummy_input = torch.randn(batch_size, 3, 256, 256).to(device)
     dummy_n2n = torch.randn(batch_size, 3, 256, 256).to(device)
 
-    # Print model summary using torchsummary for two inputs
-    print("\nModel Summary (Normal Mode):")
-    summary(model_normal, input_size=[(3, 256, 256), (3, 256, 256)], device=device)
+    # # Print model summary using torchsummary for two inputs
+    # print("\nModel Summary (Normal Mode):")
+    # summary(model_normal, input_size=[(3, 256, 256), (3, 256, 256)], device=device)
 
-    print("\nModel Summary (Bypass Mode):")
-    summary(model_bypass, input_size=[(3, 256, 256), (3, 256, 256)], device=device)
+    # print("\nModel Summary (Bypass Mode):")
+    # summary(model_bypass, input_size=[(3, 256, 256), (3, 256, 256)], device=device)
 
     # Test both modes
     output_normal = model_normal(dummy_input, dummy_n2n)
