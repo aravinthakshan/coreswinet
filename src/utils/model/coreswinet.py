@@ -38,9 +38,9 @@ class Model(nn.Module):
         self.decoder = self.unet1.decoder
 
         encoder_channels = self.encoder1.out_channels
-        attention_blocks=[]
+        self.attention_blocks=[]
         for i in encoder_channels:
-            attention_blocks.append(SimpleChannelAttention(i))
+            self.attention_blocks.append(SimpleChannelAttention(i))
         # Create Swin Transformer block for each encoder level
         self.swin_blocks = nn.ModuleList([
             SwinTransformerBlock(
