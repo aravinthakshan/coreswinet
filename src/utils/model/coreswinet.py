@@ -124,12 +124,12 @@ class Model(nn.Module):
         #         self.swin_blocks[i]
         #     )
             
-        for i in range(len(features1)):
+        for i in range(1,len(features1)):
             if self.bypass:
                 
                 processed_features.append(self.attention_blocks[i](features1[i]))
             else:
-
+                print(features1[i].shape)
                 max_feat = torch.maximum(features1[i], features2[i])
                 processed_features.append(self.attention_blocks[i](max_feat))
         # The last processed feature becomes the bottleneck
