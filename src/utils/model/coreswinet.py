@@ -203,13 +203,13 @@ class AFEBlock(nn.Module):
         return x
     
 class Model(nn.Module):
-    def __init__(self, in_channel=3, dim=54, contrastive=True, bypass=False):
+    def __init__(self, in_channels=3, dim=54, contrastive=True, bypass=False):
         super().__init__()
         self.contrastive = contrastive
         self.bypass = bypass
 
         # First encoder path
-        self.In1 = InputProj(in_channel, dim)
+        self.In1 = InputProj(in_channels, dim)
         self.FETBlock1_1 = AFEBlock(dim, dim)
         self.D1_1 = Downsample(dim, dim)
         self.FETBlock2_1 = AFEBlock(dim, dim*2)
@@ -222,7 +222,7 @@ class Model(nn.Module):
         self.D5_1 = Downsample(dim*16, dim*16)
 
         # Second encoder path
-        self.In2 = InputProj(in_channel, dim)
+        self.In2 = InputProj(in_channels, dim)
         self.FETBlock1_2 = AFEBlock(dim, dim)
         self.D1_2 = Downsample(dim, dim)
         self.FETBlock2_2 = AFEBlock(dim, dim*2)
@@ -277,7 +277,7 @@ class Model(nn.Module):
         self.U10 = Upsample(dim*2, dim)
         self.FETBlock10 = AFEBlock(dim*2, dim)
 
-        self.Out = OutputProj(dim, in_channel)
+        self.Out = OutputProj(dim, in_channels)
 
     def process_features(self, feat1, feat2, process_block, H, W):
         if self.bypass:
