@@ -32,13 +32,15 @@ class Model(nn.Module):
             classes=16,
             decoder_channels=(512, 256, 128, 64, 64),
         )
-
+        encoder_channels=[64,64,128,256,512]
         self.encoder1 = self.unet1.encoder
         self.encoder2 = self.unet2.encoder
         self.decoder = self.unet1.decoder
 
         encoder_channels = self.encoder1.out_channels
-
+        attention_blocks=[]
+        for i in encoder_channels:
+            attention_blocks.append(SimpleChannelAttention(i))
         # Create Swin Transformer block for each encoder level
         self.swin_blocks = nn.ModuleList([
             SwinTransformerBlock(
@@ -83,20 +85,20 @@ class Model(nn.Module):
             nn.Tanh()
         )
 
-    def process_features(self, feat1, feat2, swin_block):
-        if self.bypass:
-            # Skip element-wise max and directly process feat1 through Swin
-            B, C, H, W = feat1.shape
-            feat_reshaped = feat1.flatten(2).transpose(1, 2)
-            swin_out = swin_block(feat_reshaped)
-            return swin_out.transpose(1, 2).reshape(B, C, H, W)
-        else:
-            # Original processing with element-wise maximum
-            max_feat = torch.maximum(feat1, feat2)
-            B, C, H, W = max_feat.shape
-            feat_reshaped = max_feat.flatten(2).transpose(1, 2)
-            swin_out = swin_block(feat_reshaped)
-            return swin_out.transpose(1, 2).reshape(B, C, H, W)
+    # def process_features(self, feat1, feat2, swin_block):
+    #     if self.bypass:
+    #         # Skip element-wise max and directly process feat1 through Swin
+    #         B, C, H, W = feat1.shape
+    #         feat_reshaped = feat1.flatten(2).transpose(1, 2)
+    #         swin_out = swin_block(feat_reshaped)
+    #         return swin_out.transpose(1, 2).reshape(B, C, H, W)
+    #     else:
+    #         # Original processing with element-wise maximum
+    #         max_feat = torch.maximum(feat1, feat2)
+    #         B, C, H, W = max_feat.shape
+    #         feat_reshaped = max_feat.flatten(2).transpose(1, 2)
+    #         swin_out = swin_block(feat_reshaped)
+    #         return swin_out.transpose(1, 2).reshape(B, C, H, W)
 
     def forward(self, x_noisy, enc2_in):
         """
@@ -116,14 +118,18 @@ class Model(nn.Module):
 
         # Process each encoder level
         processed_features = []
+        # for i in range(len(features1)):
+        #     processed_feat = self.process_features(
+        #         features1[i], 
+        #         features2[i], 
+        #         self.swin_blocks[i]
+        #     )
         for i in range(len(features1)):
-            processed_feat = self.process_features(
-                features1[i], 
-                features2[i], 
-                self.swin_blocks[i]
-            )
-            processed_features.append(processed_feat)
-            
+            if self.bypass:
+                processed_features.append(self.attention_blocks[i](features1[i]))
+            else:
+                max_feat = torch.maximum(features1, features2)
+                processed_features.append(self.attention_blocks[i](max_feat))
         # The last processed feature becomes the bottleneck
         bottleneck = self.bottleneck_attention(processed_features[-1])
 
