@@ -13,7 +13,7 @@ from utils.soap_optimizer import SOAP
 from utils.model.archs.ZSN2N import train_n2n, N2NNetwork
 from utils.loss import ContrastiveLoss, TextureLoss, PSNRLoss
 import os 
-os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
+# os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
 def train(
     epochs,
     batch_size,
