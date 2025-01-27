@@ -1,6 +1,5 @@
 import numpy as np
 from numpy.random import RandomState
-from pytorch_wavelets import DWT1DForward, DWT1DInverse
 import torch
 from torch.autograd import Variable
 import torch.nn.functional as F
