@@ -43,7 +43,7 @@ def train(
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
-    bypass_epoch = 20
+    bypass_epoch = 40
     
     # Initialize main model with bypass parameter
     model = Model(in_channels=3, contrastive=True, bypass=False).to(device)
