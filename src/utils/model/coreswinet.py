@@ -203,7 +203,7 @@ class AFEBlock(nn.Module):
         return x
     
 class Model(nn.Module):
-    def __init__(self, in_channels=3, dim=54, contrastive=True, bypass=False):
+    def __init__(self, in_channels=3, dim=36, contrastive=True, bypass=False):
         super().__init__()
         self.contrastive = contrastive
         self.bypass = bypass
