@@ -128,7 +128,7 @@ class Model(nn.Module):
             if self.bypass:
                 processed_features.append(self.attention_blocks[i](features1[i]))
             else:
-                max_feat = torch.maximum(features1, features2)
+                max_feat = torch.maximum(features1[i], features2[i])
                 processed_features.append(self.attention_blocks[i](max_feat))
         # The last processed feature becomes the bottleneck
         bottleneck = self.bottleneck_attention(processed_features[-1])
