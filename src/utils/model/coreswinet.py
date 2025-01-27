@@ -9,7 +9,7 @@ from utils.model.archs.ZSN2N import N2NNetwork
 # from archs.SwinBlocks import SwinTransformerBlock
 # from archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
 
-    
+
 class Model(nn.Module):
     def __init__(self, in_channels=3, contrastive=True, bypass=False):
         super().__init__()
@@ -39,18 +39,10 @@ class Model(nn.Module):
 
         encoder_channels = self.encoder1.out_channels
 
-        # Create Swin Transformer block for each encoder level
-        self.swin_blocks = nn.ModuleList([
-            SwinTransformerBlock(
-                dim=ch,
-                input_resolution=(256 // (2 ** i), 256 // (2 ** i)),
-                num_heads=min(8, max(1, ch // 32)),
-                window_size=min(7, max(3, ch // 32)),
-                mlp_ratio=4.0
-            ) for i, ch in enumerate(encoder_channels)
+        self.channel_attention_blocks = nn.ModuleList([
+            SqueezeExcitationBlock(ch) for ch in encoder_channels
         ])
 
-        # Squeeze attention for bottleneck
         self.bottleneck_attention = SqueezeExcitationBlock(encoder_channels[-1])
 
         # Contrastive heads
@@ -83,20 +75,12 @@ class Model(nn.Module):
             nn.Tanh()
         )
 
-    def process_features(self, feat1, feat2, swin_block):
+    def process_features(self, feat1, feat2, attention_block):
         if self.bypass:
-            # Skip element-wise max and directly process feat1 through Swin
-            B, C, H, W = feat1.shape
-            feat_reshaped = feat1.flatten(2).transpose(1, 2)
-            swin_out = swin_block(feat_reshaped)
-            return swin_out.transpose(1, 2).reshape(B, C, H, W)
+            return attention_block(feat1)
         else:
-            # Original processing with element-wise maximum
             max_feat = torch.maximum(feat1, feat2)
-            B, C, H, W = max_feat.shape
-            feat_reshaped = max_feat.flatten(2).transpose(1, 2)
-            swin_out = swin_block(feat_reshaped)
-            return swin_out.transpose(1, 2).reshape(B, C, H, W)
+            return attention_block(max_feat)
 
     def forward(self, x_noisy, enc2_in):
         """
@@ -114,13 +98,13 @@ class Model(nn.Module):
         else:
             features2 = features1  # Dummy assignment, won't be used
 
-        # Process each encoder level
+        # Process each encoder level with channel attention
         processed_features = []
         for i in range(len(features1)):
             processed_feat = self.process_features(
                 features1[i], 
                 features2[i], 
-                self.swin_blocks[i]
+                self.channel_attention_blocks[i]
             )
             processed_features.append(processed_feat)
             
@@ -141,7 +125,6 @@ class Model(nn.Module):
                 f2 = self.contrastive_head2(features2[-1])
             return output, f1, f2
         return output
-
 
 # ### ----->>> DO NOT DELETE THIS ( MULTIPLE 1,1,2,2,3 BLOCKS OF SWIN PER RESIDUAL ) <<<----------
 # class Model(nn.Module):
