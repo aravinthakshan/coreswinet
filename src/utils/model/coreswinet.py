@@ -214,7 +214,7 @@ class AFEBlock(nn.Module):
         x = self.EFF(self.LN2(x)+ sht, H, W)
         return x
     
-class EFF_Net_Dual(nn.Module):
+class Model(nn.Module):
     def __init__(self, in_channel=3, dim=3, contrastive=True, bypass=False):
         super().__init__()
         self.contrastive = contrastive
@@ -386,7 +386,7 @@ if __name__ == '__main__':
     # Test normal forward pass
     x1 = torch.randn(1, 3, 128, 128)
     x2 = torch.randn(1, 3, 128, 128)
-    M = EFF_Net_Dual(dim=54, contrastive=True)
+    M = Model(dim=54, contrastive=True)
     y, f1, f2 = M(x1, x2)
     print(f"Output shape: {y.shape}")
     print(f"Contrastive feature shapes: {f1.shape}, {f2.shape}")
