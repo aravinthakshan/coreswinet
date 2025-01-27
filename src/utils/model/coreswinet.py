@@ -203,7 +203,7 @@ class AFEBlock(nn.Module):
         return x
     
 class Model(nn.Module):
-    def __init__(self, in_channels=3, dim=36, contrastive=True, bypass=False):
+    def __init__(self, in_channels=3, dim=18, contrastive=True, bypass=False):
         super().__init__()
         self.contrastive = contrastive
         self.bypass = bypass
@@ -374,7 +374,7 @@ if __name__ == '__main__':
     # Test normal forward pass
     x1 = torch.randn(1, 3, 128, 128)
     x2 = torch.randn(1, 3, 128, 128)
-    M = Model(dim=54, contrastive=True)
+    M = Model(dim=36, contrastive=True)
     y, f1, f2 = M(x1, x2)
     print(f"Output shape: {y.shape}")
     print(f"Contrastive feature shapes: {f1.shape}, {f2.shape}")
