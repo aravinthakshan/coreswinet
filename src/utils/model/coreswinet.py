@@ -32,14 +32,13 @@ class Model(nn.Module):
             classes=16,
             decoder_channels=(512, 256, 128, 64, 64),
         )
-        encoder_channels=[64,64,128,256,512]
         self.encoder1 = self.unet1.encoder
         self.encoder2 = self.unet2.encoder
         self.decoder = self.unet1.decoder
 
-        encoder_channels = self.encoder1.out_channels
+        self.encoder_channels = self.encoder1.out_channels
         self.attention_blocks=nn.ModuleList()
-        for i in encoder_channels:
+        for i in self.encoder_channels:
             self.attention_blocks.append(SimpleChannelAttention(i))
         # Create Swin Transformer block for each encoder level
         self.swin_blocks = nn.ModuleList([
@@ -49,11 +48,11 @@ class Model(nn.Module):
                 num_heads=min(8, max(1, ch // 32)),
                 window_size=min(7, max(3, ch // 32)),
                 mlp_ratio=4.0
-            ) for i, ch in enumerate(encoder_channels)
+            ) for i, ch in enumerate(self.encoder_channels)
         ])
 
         # Squeeze attention for bottleneck
-        self.bottleneck_attention = SqueezeExcitationBlock(encoder_channels[-1])
+        self.bottleneck_attention = SqueezeExcitationBlock(self.encoder_channels[-1])
 
         # Contrastive heads
         self.contrastive = contrastive
@@ -61,7 +60,7 @@ class Model(nn.Module):
             self.contrastive_head1 = nn.Sequential(
                 nn.AdaptiveAvgPool2d(1),
                 nn.Flatten(),
-                nn.Linear(in_features=encoder_channels[-1], out_features=512),
+                nn.Linear(in_features=self.encoder_channels[-1], out_features=512),
                 nn.BatchNorm1d(512),
                 nn.ReLU(),
                 nn.Linear(in_features=512, out_features=64),
@@ -70,7 +69,7 @@ class Model(nn.Module):
             self.contrastive_head2 = nn.Sequential(
                 nn.AdaptiveAvgPool2d(1),
                 nn.Flatten(),
-                nn.Linear(in_features=encoder_channels[-1], out_features=512),
+                nn.Linear(in_features=self.encoder_channels[-1], out_features=512),
                 nn.BatchNorm1d(512),
                 nn.ReLU(),
                 nn.Linear(in_features=512, out_features=64),
@@ -128,9 +127,9 @@ class Model(nn.Module):
         for i in range(1,len(features1)):
             if self.bypass:
                 
-                processed_features.append(self.attention_blocks[i-1](features1[i]))
+                processed_features.append(self.attention_blocks[i](features1[i]))
             else:
-                
+                print(self.attention_blocks[i].shape)
                 max_feat = torch.maximum(features1[i], features2[i])
                 processed_features.append(self.attention_blocks[i](max_feat))
         # The last processed feature becomes the bottleneck
