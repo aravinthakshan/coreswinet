@@ -124,9 +124,8 @@ class Model(nn.Module):
         #         features2[i], 
         #         self.swin_blocks[i]
         #     )
-        for i in features1:
-            print(i.shape)
-        for i in range(len(features1)):
+            
+        for i in range(1,len(features1)):
             if self.bypass:
                 
                 processed_features.append(self.attention_blocks[i](features1[i]))
