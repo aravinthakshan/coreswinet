@@ -128,7 +128,7 @@ class Model(nn.Module):
         for i in range(1,len(features1)):
             if self.bypass:
                 
-                processed_features.append(self.attention_blocks[i](features1[i]))
+                processed_features.append(self.attention_blocks[i-1](features1[i]))
             else:
                 
                 max_feat = torch.maximum(features1[i], features2[i])
