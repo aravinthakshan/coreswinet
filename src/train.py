@@ -21,6 +21,7 @@ def main(args):
             project = "DeFInet",
             config = {
                 "Epochs": args.epochs,
+                
                 "Batch Size": args.batch_size,
                 "Learning Rate": args.lr
             }
