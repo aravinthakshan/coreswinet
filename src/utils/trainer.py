@@ -33,7 +33,7 @@ def train(
     if dataset_name=='Waterloo':
         dataset = Waterloo(root_dir=train_dir, noise_level=noise_level, crop_size=256, num_crops=2, normalize=True,augmentation=get_training_augmentation())
     elif dataset_name=='BSD':
-        dataset = BSD400(root_dir=train_dir, noise_level=noise_level, crop_size=256, num_crops=2, normalize=True,augmentation=get_training_augmentation())
+        dataset = BSD400(root_dir=train_dir, noise_level=noise_level, crop_size=256, num_crops=10, normalize=True,augmentation=get_training_augmentation())
     elif dataset_name=='DIV2K':
         dataset = DIV2K(root_dir=train_dir, noise_level=noise_level, crop_size=256, num_crops=2, normalize=True,augmentation=get_training_augmentation())
     elif dataset_name=='SIDD':
