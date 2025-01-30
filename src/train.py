@@ -13,7 +13,8 @@ def main(args):
         'lr' : args.lr,
         'wandb': args.wandbd,
         'noise_level': args.noise_level,
-        'dataset_name':args.dataset_name
+        'dataset_name':args.dataset_name,
+        'test_dataset':args.test_dataset
     }
     if args.wandbd:
         wandb.login(key=args.key)
