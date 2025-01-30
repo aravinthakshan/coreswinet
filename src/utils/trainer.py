@@ -126,8 +126,8 @@ def train(
                 else:
                     loss = mse_loss + 0.1 * psnr_loss
                 
-                print("PSNR Loss: ", psnr_loss)
-                print("MSE Loss: ",mse_loss)
+                # print("PSNR Loss: ", psnr_loss)
+                # print("MSE Loss: ",mse_loss)
                 
                 loss.backward()
                 optimizer.step()
