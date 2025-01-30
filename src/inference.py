@@ -23,12 +23,12 @@ def un_tan_fi(data):
 def test(
     batch_size,
     test_dir,
+    use_wandb=True,
+    device='cuda',
     noise_level=25,
+    test_dataset='CBSD68',
     crop_size=256, 
     num_crops=34,
-    device='cuda',
-    use_wandb=True,
-    test_dataset='CBSD68'
 ):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
