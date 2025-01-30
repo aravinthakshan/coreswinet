@@ -377,6 +377,8 @@ if __name__ == '__main__':
     M = Model(dim=36, contrastive=True)
     y, f1, f2 = M(x1, x2)
     print(f"Output shape: {y.shape}")
+    print(f1)
+    print(f2)
     print(f"Contrastive feature shapes: {f1.shape}, {f2.shape}")
 
     # Custom input function for complexity analysis

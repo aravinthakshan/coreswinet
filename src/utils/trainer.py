@@ -118,11 +118,16 @@ def train(
                 mse_loss = mse_criterion(output, clean)
                 psnr_loss = psnr_loss_func(output,clean)
                 # Only apply contrastive loss before bypass_epoch
+                
                 if epoch < bypass_epoch:
                     contrastive_loss = contrastive_loss_fn(f1, f2)
+                    print("CONTRASTIVE Loss: ",contrastive_loss)
                     loss = mse_loss + 0.01 * contrastive_loss + 0.1 * psnr_loss
                 else:
                     loss = mse_loss + 0.1 * psnr_loss
+                
+                print("PSNR Loss: ", psnr_loss)
+                print("MSE Loss: ",mse_loss)
                 
                 loss.backward()
                 optimizer.step()
