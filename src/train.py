@@ -42,7 +42,7 @@ if __name__ == '__main__':
     
     parser.add_argument('--wandbd', type=bool ,default=True)
     parser.add_argument('--dataset_name',type=str,required=False, default='Waterloo')
-    
+    parser.add_argument('--test_dataset',type=str,required=False, default='CBSD68')
     # never set key in REPO
     parser.add_argument('--key', type = str, required=False, default = '9097b6348907fd8bad133bde5c71d9e0c08fde45')
     arguments=parser.parse_args()
