@@ -31,7 +31,7 @@ def test_model(
 ):
     # Load models
     main_model_snap, _ = load_models(
-        '/kaggle/input/just-swin-kaggle/pytorch/default/1/best_model.pth', 
+        '/kaggle/input/bsd400/final_model (6).pth', 
         './n2n_model/best_model_n2n.pth', 
         device
     )
@@ -53,7 +53,7 @@ def test_model(
     
     # Initialize dataset and metrics
     dataset = CBSD68Dataset(
-        root_dir='/kaggle/input/d/aryamangupta04/cbsd68/CBSD68', 
+        root_dir='/kaggle/input/cbsd68/CBSD68', 
         noise_level=25,
         crop_size=crop_size,
         num_crops=num_crops,
