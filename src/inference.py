@@ -31,7 +31,7 @@ def test_model(
 ):
     # Load models
     main_model_snap, _ = load_models(
-        '/kaggle/input/bsd400/final_model (6).pth', 
+        '/kaggle/input/bsd-best/best_model (1).pth', 
         './n2n_model/best_model_n2n.pth', 
         device
     )
