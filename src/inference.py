@@ -6,7 +6,7 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import os
 import numpy as np
-from utils.dataloader import CBSD68Dataset
+from utils.dataloader import CBSD68Dataset,McMasterDataset
 from torch.utils.data import DataLoader, Subset
 import torchmetrics
 from tqdm import tqdm
@@ -54,6 +54,15 @@ def test(
     if test_dataset=='CBSD68':
         dataset = CBSD68Dataset(
             root_dir='/kaggle/input/cbsd68/CBSD68', 
+            noise_level=25,
+            crop_size=256,
+            num_crops=34,
+            normalize=True,
+            tanfi=True 
+        )
+    elif test_dataset=='mcmaster':
+        dataset = McMasterDataset(
+            root_dir='/kaggle/input/mcmaster/McMaster', 
             noise_level=25,
             crop_size=256,
             num_crops=34,

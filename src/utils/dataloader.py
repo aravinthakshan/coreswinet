@@ -495,8 +495,8 @@ class McMasterDataset(Dataset):
         self.normalize = normalize
         self.tanfi = tanfi
 
-        self.original_dir = os.path.join(root_dir, "original_png")
-        self.noisy_dir = os.path.join(root_dir, "CBSD_"+self.noise_level)
+        self.original_dir = os.path.join(root_dir, "McMaster_noisy_0")
+        self.noisy_dir = os.path.join(root_dir, "McMaster_"+self.noise_level)
 
         self.image_paths = [fname for fname in os.listdir(self.original_dir) if fname.endswith('.png')]
 
