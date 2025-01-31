@@ -41,7 +41,7 @@ def test(
         })
     
     main_model, n2n_model = load_models(
-        '/kaggle/input/bsd400/final_model (6).pth', 
+        './main_model/best_model.pth', 
         './n2n_model/best_model_n2n.pth', 
         device
     )
