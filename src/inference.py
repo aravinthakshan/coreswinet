@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import argparse
-from utils.model.newmodel import Model
+from utils.model.coreswinet import Model
 from PIL import Image
 import matplotlib.pyplot as plt
 import os
