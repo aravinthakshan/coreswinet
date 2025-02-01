@@ -128,12 +128,20 @@ def train(
                 psnr_loss = psnr_loss_func(output, clean)
 
                 if epoch < bypass_epoch:
-                    contrastive_losses = []
+                    all_f1 = []
+                    all_f2 = []
+                    
                     for f1, f2 in contrastive_features:
-                        level_loss = contrastive_loss_fn(f1, f2)
-                        contrastive_losses.append(level_loss)  
-                                          
-                    loss = mse_loss + 0.01 * contrastive_losses + 0.1 * psnr_loss
+                        all_f1.append(f1)
+                        all_f2.append(f2)
+                    
+                    # Concatenate all features along the feature dimension
+                    combined_f1 = torch.cat(all_f1, dim=1)  
+                    combined_f2 = torch.cat(all_f2, dim=1) 
+                    
+                    # Calculate single contrastive loss on concatenated features
+                    contrastive_loss = contrastive_loss_fn(combined_f1, combined_f2)
+                    loss = mse_loss + 0.01 * contrastive_loss + 0.1 * psnr_loss
                 else:
                     loss = mse_loss + 0.01 * psnr_loss
                 loss.backward()
