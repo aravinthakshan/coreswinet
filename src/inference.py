@@ -47,7 +47,7 @@ def test(
     )
 
     main_model.to(device).eval()
-    n2n_model.to(device).eval()
+    # n2n_model.to(device).eval()
     
     main_model.bypass = True 
     print("Main Model Bypass!")
