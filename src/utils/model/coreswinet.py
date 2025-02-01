@@ -52,15 +52,15 @@ class Model(nn.Module):
         encoder_channels = self.encoder1.out_channels
 
         # Create Swin Transformer block for each encoder level
-        # self.swin_blocks = nn.ModuleList([
-        #     SwinTransformerBlock(
-        #         dim=ch,
-        #         input_resolution=(256 // (2 ** i), 256 // (2 ** i)),
-        #         num_heads=min(8, max(1, ch // 32)),
-        #         window_size=min(7, max(3, ch // 32)),
-        #         mlp_ratio=4.0
-        #     ) for i, ch in enumerate(encoder_channels)
-        # ])
+        self.swin_blocks = nn.ModuleList([
+            SwinTransformerBlock(
+                dim=ch,
+                input_resolution=(256 // (2 ** i), 256 // (2 ** i)),
+                num_heads=min(8, max(1, ch // 32)),
+                window_size=min(7, max(3, ch // 32)),
+                mlp_ratio=4.0
+            ) for i, ch in enumerate(encoder_channels)
+        ])
 
         # Squeeze attention for bottleneck
         self.bottleneck_attention = SqueezeExcitationBlock(encoder_channels[-1])
@@ -95,20 +95,20 @@ class Model(nn.Module):
             nn.Tanh()
         )
 
-    # def process_features(self, feat1, feat2, swin_block):
-    #     if self.bypass:
-    #         # Skip element-wise max and directly process feat1 through Swin
-    #         B, C, H, W = feat1.shape
-    #         feat_reshaped = feat1.flatten(2).transpose(1, 2)
-    #         swin_out = swin_block(feat_reshaped)
-    #         return swin_out.transpose(1, 2).reshape(B, C, H, W)
-    #     else:
-    #         # Original processing with element-wise maximum
-    #         max_feat = torch.maximum(feat1, feat2)
-    #         B, C, H, W = max_feat.shape
-    #         feat_reshaped = max_feat.flatten(2).transpose(1, 2)
-    #         swin_out = swin_block(feat_reshaped)
-    #         return swin_out.transpose(1, 2).reshape(B, C, H, W)
+    def process_features(self, feat1, feat2, swin_block):
+        if self.bypass:
+            # Skip element-wise max and directly process feat1 through Swin
+            B, C, H, W = feat1.shape
+            feat_reshaped = feat1.flatten(2).transpose(1, 2)
+            swin_out = swin_block(feat_reshaped)
+            return swin_out.transpose(1, 2).reshape(B, C, H, W)
+        else:
+            # Original processing with element-wise maximum
+            max_feat = torch.maximum(feat1, feat2)
+            B, C, H, W = max_feat.shape
+            feat_reshaped = max_feat.flatten(2).transpose(1, 2)
+            swin_out = swin_block(feat_reshaped)
+            return swin_out.transpose(1, 2).reshape(B, C, H, W)
 
     def forward(self, x_noisy, x_n2n):
         """
@@ -125,26 +125,22 @@ class Model(nn.Module):
             features2 = list(self.encoder2(x_n2n))
         else:
             features2 = features1  # Dummy assignment, won't be used
-        max_feat = []
-        for i in range(len(features1)):
-            step = torch.maximum(features1[i], features2[i])
-            max_feat.append(step)
 
         # Process each encoder level
-        # processed_features = []
-        # for i in range(len(features1)):
-        #     processed_feat = self.process_features(
-        #         features1[i], 
-        #         features2[i], 
-        #         self.swin_blocks[i]
-        #     )
-        #     processed_features.append(processed_feat)
+        processed_features = []
+        for i in range(len(features1)):
+            processed_feat = self.process_features(
+                features1[i], 
+                features2[i], 
+                self.swin_blocks[i]
+            )
+            processed_features.append(processed_feat)
 
         # The last processed feature becomes the bottleneck
-        bottleneck = self.bottleneck_attention(max_feat[-1])
+        bottleneck = self.bottleneck_attention(processed_features[-1])
 
         # Pass processed features into decoder as skip connections
-        decoder_features = max_feat[:-1]
+        decoder_features = processed_features[:-1]
         decoder_output = self.decoder(*decoder_features, bottleneck)
 
         output = self.final(decoder_output)

@@ -41,7 +41,7 @@ def test(
         })
     
     main_model = load_models(
-        '/kaggle/input/waterlooidk/final_model (7).pth',
+        '/kaggle/input/bestmodel-bsd400/final_model (8).pth',
         device
     )
 
