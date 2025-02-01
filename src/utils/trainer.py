@@ -119,6 +119,9 @@ def train(
             for itr, batch_data in enumerate(loader):
                 noise, clean = [x.to(device) for x in batch_data]
                 
+                n2n_output = un_tan_fi(clean)# feeding ground truth  
+                                  
+                optimizer.zero_grad()
                 output, contrastive_features = model(noise, n2n_output)
 
                 mse_loss = mse_criterion(output, clean)
