@@ -59,7 +59,7 @@ def train(
     n2n_model.eval()
 
     # Initialize main model with bypass parameter
-    model = Model(dim=36, contrastive=True, bypass=False).to(device)
+    model = Model(in_channels=3, contrastive=True, bypass=False).to(device)
     
     # Optimizer
     optimizer = SOAP(
