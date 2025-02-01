@@ -102,14 +102,12 @@ def main_vis(test_dir, use_wandb=True, noise_level=25, crop_size=256, num_crops=
             "num_crops": num_crops
         })
     
-    main_model, n2n_model = load_models(
-    './main_model/best_model.pth', 
-    './n2n_model/best_model_n2n.pth', 
+    main_model = load_models(
+    './main_model/best_model.pth',  
     device
 )
 
     main_model.to(device).eval()
-    n2n_model.to(device).eval()
     
     main_model.bypass = True 
     print("Main Model Bypass ! ")
