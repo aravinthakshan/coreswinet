@@ -130,7 +130,6 @@ def train(
                         level_loss = contrastive_loss_fn(f1, f2)
                         contrastive_losses.append(level_loss)  
                                           
-                    # Combine losses with weights
                     loss = mse_loss + 0.01 * contrastive_losses + 0.1 * psnr_loss
                 else:
                     loss = mse_loss + 0.01 * psnr_loss
