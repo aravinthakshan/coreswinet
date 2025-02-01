@@ -5,7 +5,7 @@ import wandb
 import torchmetrics.image
 from utils.dataloader import CBSD68Dataset 
 from torch.utils.data import DataLoader
-from utils.model.newmodel import Model  
+from utils.model.coreswinet import Model  
 from utils.model.archs.ZSN2N import N2NNetwork
 
 def load_models(main_model_path, device):
