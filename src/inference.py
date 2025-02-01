@@ -40,7 +40,7 @@ def test(
             "num_crops": num_crops
         })
     
-    main_model, n2n_model = load_models(
+    main_model, _ = load_models(
         '/kaggle/input/waterlooidk/final_model (7).pth', 
         './n2n_model/best_model_n2n.pth', 
         device
