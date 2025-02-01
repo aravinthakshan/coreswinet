@@ -1,0 +1,137 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import segmentation_models_pytorch as smp
+from einops import rearrange
+# from archs.AttentionModules import SqueezeExcitationBlock
+# from archs.EEF import AFEBlock, DHA
+from utils.model.archs.AttentionModules import SqueezeExcitationBlock
+from utils.model.archs.EEF import AFEBlock, DHA
+from torchsummary import summary
+
+
+class Model(nn.Module):
+    def __init__(self, in_channels=3, contrastive=True, bypass=False):
+        super().__init__()
+        self.bypass = bypass
+
+        # Initialize encoders and decoder
+        self.unet1 = smp.Unet(
+            encoder_name="resnet18",
+            encoder_weights="imagenet",
+            in_channels=in_channels,
+            classes=16,
+            decoder_channels=(512, 256, 128, 64, 64),
+        )
+        self.unet2 = smp.Unet(
+            encoder_name="resnet18",
+            encoder_weights="imagenet",
+            in_channels=in_channels,
+            classes=16,
+            decoder_channels=(512, 256, 128, 64, 64),
+        )
+
+        self.encoder1 = self.unet1.encoder
+        self.encoder2 = self.unet2.encoder
+        self.decoder = self.unet1.decoder
+
+        encoder_channels = self.encoder1.out_channels
+
+        # Replace Swin blocks with AFE blocks
+        self.afe_blocks = nn.ModuleList([
+            AFEBlock(ch, ch) for ch in encoder_channels
+        ])
+
+        # Bottleneck attention remains unchanged
+        self.bottleneck_attention = SqueezeExcitationBlock(encoder_channels[-1])
+        # self.bottleneck_attention = DHA(encoder_channels[-1])
+
+        # Contrastive heads
+        self.contrastive = contrastive
+        if contrastive:
+            self.contrastive_head1 = nn.Sequential(
+                nn.AdaptiveAvgPool2d(1),
+                nn.Flatten(),
+                nn.Linear(encoder_channels[-1], 512),
+                nn.BatchNorm1d(512),
+                nn.ReLU(),
+                nn.Linear(512, 64),
+                nn.BatchNorm1d(64),
+            )
+            self.contrastive_head2 = nn.Sequential(
+                nn.AdaptiveAvgPool2d(1),
+                nn.Flatten(),
+                nn.Linear(encoder_channels[-1], 512),
+                nn.BatchNorm1d(512),
+                nn.ReLU(),
+                nn.Linear(512, 64),
+                nn.BatchNorm1d(64),
+            )
+
+        self.final = nn.Sequential(
+            nn.Conv2d(64, 16, kernel_size=1),
+            nn.BatchNorm2d(16),
+            nn.Conv2d(16, in_channels, kernel_size=1),
+            nn.Tanh()
+        )
+
+    def process_features(self, feat1, feat2, afe_block, H, W):
+        if self.bypass:
+            B, C = feat1.shape[0], feat1.shape[1]
+            feat_reshaped = feat1.flatten(2).transpose(1, 2)
+            afe_out = afe_block(feat_reshaped, H, W)
+            return afe_out.transpose(1, 2).reshape(B, C, H, W)
+        else:
+            max_feat = torch.maximum(feat1, feat2)
+            B, C = max_feat.shape[0], max_feat.shape[1]
+            feat_reshaped = max_feat.flatten(2).transpose(1, 2)
+            afe_out = afe_block(feat_reshaped, H, W)
+            return afe_out.transpose(1, 2).reshape(B, C, H, W)
+
+    def forward(self, x_noisy, enc2_in):
+        features1 = list(self.encoder1(x_noisy))
+        features2 = list(self.encoder2(enc2_in)) if not self.bypass else features1
+
+        processed_features = []
+        for i, (feat1, feat2, afe_block) in enumerate(zip(features1, features2, self.afe_blocks)):
+            H, W = feat1.shape[2:]
+            processed_feat = self.process_features(feat1, feat2, afe_block, H, W)
+            processed_features.append(processed_feat)
+
+        bottleneck = self.bottleneck_attention(processed_features[-1])
+        decoder_output = self.decoder(*processed_features[:-1], bottleneck)
+        output = self.final(decoder_output)
+
+        if self.contrastive:
+            f1 = self.contrastive_head1(features1[-1])
+            f2 = self.contrastive_head2(features2[-1] if not self.bypass else features1[-1])
+            return output, f1, f2
+        return output
+    
+if __name__ == "__main__":
+    # Set the device
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    
+    # Test both modes
+    model_normal = Model(in_channels=3).to(device)
+    model_bypass = Model(in_channels=3).to(device)
+    
+    batch_size = 16
+    dummy_input = torch.randn(batch_size, 3, 256, 256).to(device)
+    dummy_n2n = torch.randn(batch_size, 3, 256, 256).to(device)
+
+    # # # Print model summary using torchsummary for two inputs
+    # print("\nModel Summary (Normal Mode):")
+    # summary(model_normal, input_size=[(3, 256, 256), (3, 256, 256)], device=device)
+
+    # Test both modes
+    output_normal = model_normal(dummy_input, dummy_n2n)
+    output_bypass = model_bypass(dummy_input, dummy_n2n)
+
+    if isinstance(output_normal, tuple):
+        print(f"Normal mode output shape: {output_normal[0].shape}")
+        print(f"Normal mode contrastive feature shapes: {output_normal[1].shape}, {output_normal[2].shape}")
+    
+    if isinstance(output_bypass, tuple):
+        print(f"Bypass mode output shape: {output_bypass[0].shape}")
+        print(f"Bypass mode contrastive feature shapes: {output_bypass[1].shape}, {output_bypass[2].shape}")
