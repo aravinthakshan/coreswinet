@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from utils.model.coreswinet import Model  
 from utils.model.archs.ZSN2N import N2NNetwork
 
-def load_models(main_model_path, n2n_model_path, device):
+def load_models(main_model_path, device):
     """Loads the main model and n2n model from separate checkpoints."""
     
     # Load main model checkpoint
