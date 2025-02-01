@@ -18,10 +18,10 @@ def load_models(main_model_path, n2n_model_path, device):
     print(f"Loaded main model state dict from {main_model_path}.")
     
     # Load n2n model checkpoint
-    n2n_checkpoint = torch.load(n2n_model_path, map_location=device)
-    n2n_model = N2NNetwork()  # Initialize n2n model
-    n2n_model.load_state_dict(n2n_checkpoint['model_state_dict'])
-    print(f"Loaded n2n model state dict from {n2n_model_path}.")
+    # n2n_checkpoint = torch.load(n2n_model_path, map_location=device)
+    # n2n_model = N2NNetwork()  # Initialize n2n model
+    # n2n_model.load_state_dict(n2n_checkpoint['model_state_dict'])
+    # print(f"Loaded n2n model state dict from {n2n_model_path}.")
     
     max_ssim = main_checkpoint['max_ssim']  # Or use n2n_checkpoint, if you prefer
     max_psnr = main_checkpoint['max_psnr']
@@ -29,7 +29,7 @@ def load_models(main_model_path, n2n_model_path, device):
     
     print(f"Loaded max_ssim: {max_ssim}, max_psnr: {max_psnr}, epoch: {epoch}.")
     
-    return main_model, n2n_model
+    return main_model
 
 
 def un_tan_fi(data):
