@@ -51,15 +51,9 @@ class Model(nn.Module):
 
         encoder_channels = self.encoder1.out_channels
 
-        # Create Swin Transformer block for each encoder level
-        self.swin_blocks = nn.ModuleList([
-            SwinTransformerBlock(
-                dim=ch,
-                input_resolution=(256 // (2 ** i), 256 // (2 ** i)),
-                num_heads=min(8, max(1, ch // 32)),
-                window_size=min(7, max(3, ch // 32)),
-                mlp_ratio=4.0
-            ) for i, ch in enumerate(encoder_channels)
+        # Replace Swin blocks with PReLU blocks for each encoder level
+        self.prelu_blocks = nn.ModuleList([
+            PReLUBlock(ch) for ch in encoder_channels
         ])
 
         # Squeeze attention for bottleneck
@@ -95,20 +89,14 @@ class Model(nn.Module):
             nn.Tanh()
         )
 
-    def process_features(self, feat1, feat2, swin_block):
+    def process_features(self, feat1, feat2, prelu_block):
         if self.bypass:
-            # Skip element-wise max and directly process feat1 through Swin
-            B, C, H, W = feat1.shape
-            feat_reshaped = feat1.flatten(2).transpose(1, 2)
-            swin_out = swin_block(feat_reshaped)
-            return swin_out.transpose(1, 2).reshape(B, C, H, W)
+            # Skip element-wise max and directly process feat1 through PReLU
+            return prelu_block(feat1)
         else:
             # Original processing with element-wise maximum
             max_feat = torch.maximum(feat1, feat2)
-            B, C, H, W = max_feat.shape
-            feat_reshaped = max_feat.flatten(2).transpose(1, 2)
-            swin_out = swin_block(feat_reshaped)
-            return swin_out.transpose(1, 2).reshape(B, C, H, W)
+            return prelu_block(max_feat)
 
     def forward(self, x_noisy, x_n2n):
         """
@@ -132,7 +120,7 @@ class Model(nn.Module):
             processed_feat = self.process_features(
                 features1[i], 
                 features2[i], 
-                self.swin_blocks[i]
+                self.prelu_blocks[i]
             )
             processed_features.append(processed_feat)
 
