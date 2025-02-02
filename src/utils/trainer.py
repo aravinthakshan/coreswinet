@@ -149,8 +149,9 @@ def train(
                 
                 if epoch < bypass_epoch:
                     contrastive_losses = []
-                    weights = [0.01, 0.02, 0.03, 0.04, 0.05]  # Weights for different levels
-                    
+                    # weights = [0.01, 0.02, 0.03, 0.04, 0.05]  # Weights for different levels
+                    weights = [0.05, 0.04, 0.03, 0.02, 0.01] 
+  
                     for idx, (f1, f2) in enumerate(contrastive_features):
                         if idx < len(weights):  
                             level_loss = contrastive_loss_fn(f1, f2)
