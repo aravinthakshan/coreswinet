@@ -49,14 +49,14 @@ def test_single_configuration(
     # Dataset paths mapping
     dataset_paths = {
         'CBSD68': '/kaggle/input/cbsd68/CBSD68',
-        'mcmaster': '/kaggle/input/mcmaster/McMaster',
+        # 'mcmaster': '/kaggle/input/mcmaster/McMaster',
         'kodak': '/kaggle/input/kodak-test/kodak_test'
     }
     
     # Dataset class mapping
     dataset_classes = {
         'CBSD68': CBSD68Dataset,
-        'mcmaster': McMasterDataset,
+        # 'mcmaster': McMasterDataset,
         'kodak': kodak
     }
     
@@ -128,7 +128,7 @@ def test(
     
     # Load model
     main_model = load_models(
-        '/kaggle/input/trainon50waterloo/best_model (2).pth',
+        '/kaggle/input/best_model15/pytorch/default/1/best_model (1).pth',
         device
     )
     main_model.to(device).eval()
