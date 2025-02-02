@@ -6,7 +6,7 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import os
 import numpy as np
-from utils.dataloader import CBSD68Dataset,McMasterDataset
+from utils.dataloader import CBSD68Dataset,McMasterDataset,kodak
 from torch.utils.data import DataLoader, Subset
 import torchmetrics
 from tqdm import tqdm
@@ -69,7 +69,7 @@ def test(
             tanfi=True 
         )
     elif test_dataset=='kodak':
-        dataset = McMasterDataset(
+        dataset = kodak(
             root_dir='/kaggle/input/mcmaster/McMaster', 
             noise_level=15,
             crop_size=256,
