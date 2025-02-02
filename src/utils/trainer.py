@@ -126,26 +126,22 @@ def train(
 
                 mse_loss = mse_criterion(output, clean)
                 psnr_loss = psnr_loss_func(output, clean)
+                
+                if epoch < bypass_epoch:
+                    level_contrastive_losses = []
+                    
+                    for level_idx, (f1, f2) in enumerate(contrastive_features):
+                        level_loss = contrastive_loss_fn(f1, f2)
+                        level_contrastive_losses.append(level_loss)
+                                            
+                    total_contrastive_loss = sum(level_contrastive_losses)
+                    
+                    loss = mse_loss + 0.01 * total_contrastive_loss + 0.1 * psnr_loss
+                else:
+                    loss = mse_loss + 0.1 * psnr_loss
 
-                # if epoch < bypass_epoch:
-                #     all_f1 = []
-                #     all_f2 = []
-                    
-                #     for f1, f2 in contrastive_features:
-                #         all_f1.append(f1)
-                #         all_f2.append(f2)
-                    
-                #     # Concatenate all features along the feature dimension
-                #     combined_f1 = torch.cat(all_f1, dim=1)  
-                #     combined_f2 = torch.cat(all_f2, dim=1) 
-                    
-                #     # Calculate single contrastive loss on concatenated features
-                #     contrastive_loss = contrastive_loss_fn(combined_f1, combined_f2)
-                #     loss = mse_loss + 0.01 * contrastive_loss + 0.1 * psnr_loss
-                # else:
-                #     loss = mse_loss + 0.01 * psnr_loss
-                # loss.backward()
-                # optimizer.step()
+                loss.backward()
+                optimizer.step()
                 
                 if epoch < bypass_epoch:
                     contrastive_losses = []
