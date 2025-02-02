@@ -6,7 +6,7 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import os
 import numpy as np
-from utils.dataloader import CBSD68Dataset,McMasterDataset
+from utils.dataloader import CBSD68Dataset,McMasterDataset,kodak
 from torch.utils.data import DataLoader, Subset
 import torchmetrics
 from tqdm import tqdm
@@ -20,70 +20,71 @@ def un_tan_fi(data):
     d /= 2
     return d
 
-def test(
+def test_single_configuration(
+    main_model,
+    dataset_name,
+    noise_level,
     batch_size,
-    test_dir,
-    use_wandb=True,
-    device='cuda',
-    noise_level=25,
-    test_dataset='CBSD68',
-    crop_size=256, 
+    crop_size=256,
     num_crops=34,
+    device='cuda',
+    use_wandb=True
 ):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Using device: {device}")
+    """
+    Run testing for a single dataset and noise level configuration.
     
-    if use_wandb:
-        wandb.init(project="DeFInet", config={
-            "noise_level": noise_level,
-            "crop_size": crop_size,
-            "num_crops": num_crops
-        })
+    Args:
+        main_model: The model to test
+        dataset_name: Name of the dataset ('CBSD68', 'mcmaster', or 'kodak')
+        noise_level: Noise level to test with
+        batch_size: Batch size for testing
+        crop_size: Size of image crops
+        num_crops: Number of crops per image
+        device: Computing device
+        use_wandb: Whether to log to wandb
     
-    main_model = load_models(
-        './main_model/best_model.pth',
-        device
+    Returns:
+        tuple: (avg_psnr, avg_ssim) for this configuration
+    """
+    # Dataset paths mapping
+    dataset_paths = {
+        'CBSD68': '/kaggle/input/cbsd68/CBSD68',
+        'mcmaster': '/kaggle/input/mcmaster/McMaster',
+        'kodak': '/kaggle/input/kodak-test/kodak_test'
+    }
+    
+    # Dataset class mapping
+    dataset_classes = {
+        'CBSD68': CBSD68Dataset,
+        'mcmaster': McMasterDataset,
+        'kodak': kodak
+    }
+    
+    # Initialize dataset
+    dataset_class = dataset_classes[dataset_name]
+    dataset = dataset_class(
+        root_dir=dataset_paths[dataset_name],
+        noise_level=noise_level,
+        crop_size=crop_size,
+        num_crops=num_crops,
+        normalize=True,
+        tanfi=True
     )
-
-    main_model.to(device).eval()
-    # n2n_model.to(device).eval()
     
-    main_model.bypass = True 
-    print("Main Model Bypass!")
-    if test_dataset=='CBSD68':
-        dataset = CBSD68Dataset(
-            root_dir='/kaggle/input/cbsd68/CBSD68', 
-            noise_level=25,
-            crop_size=256,
-            num_crops=34,
-            normalize=True,
-            tanfi=True 
-        )
-    elif test_dataset=='mcmaster':
-        dataset = McMasterDataset(
-            root_dir='/kaggle/input/mcmaster/McMaster', 
-            noise_level=25,
-            crop_size=256,
-            num_crops=34,
-            normalize=True,
-            tanfi=True 
-        )
-
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
     
+    # Initialize metrics
     psnr_metric = torchmetrics.image.PeakSignalNoiseRatio().to(device)
     ssim_metric = torchmetrics.image.StructuralSimilarityIndexMeasure().to(device)
-    
-    # Reset metrics at start
     psnr_metric.reset()
     ssim_metric.reset()
     
-    # Initialize running averages
     total_psnr = 0
     total_ssim = 0
     num_batches = 0
     
-    with tqdm(dataloader, desc="Testing Progress") as loader:
+    # Testing loop
+    with tqdm(dataloader, desc=f"Testing {dataset_name} - Noise {noise_level}") as loader:
         for noise, clean in loader:
             noise, clean = noise.to(device), clean.to(device)
             
@@ -91,31 +92,101 @@ def test(
                 output_n2n = un_tan_fi(clean)
                 output_main, _, _ = main_model(noise, output_n2n)
             
-            # Calculate metrics for main model
             psnr_main, ssim_main = get_metrics(clean, output_main, psnr_metric, ssim_metric)
             
-            # Update running averages (per batch, not per image)
             total_psnr += psnr_main
             total_ssim += ssim_main
             num_batches += 1
             
-            # Update progress bar
             loader.set_postfix(psnr=psnr_main, ssim=ssim_main)
     
-    # Calculate final averages
     avg_psnr = total_psnr / num_batches
     avg_ssim = total_ssim / num_batches
     
-    print(f"\nFinal Results:")
-    print(f"Average PSNR TEST: {avg_psnr:.4f}")
-    print(f"Average SSIM TEST: {avg_ssim:.4f}")
+    return avg_psnr, avg_ssim
+
+def test(
+    batch_size,
+    test_dir,
+    use_wandb=True,
+    device='cuda',
+    crop_size=256,
+    num_crops=34,
+):
+    """
+    Main testing function that runs tests across multiple datasets and noise levels.
+    """
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using device: {device}")
+    
+    # Initialize wandb if requested
+    if use_wandb:
+        wandb.init(project="DeFInet", config={
+            "crop_size": crop_size,
+            "num_crops": num_crops
+        })
+    
+    # Load model
+    main_model = load_models(
+        '/kaggle/input/trainon50waterloo/best_model (2).pth',
+        device
+    )
+    main_model.to(device).eval()
+    main_model.bypass = True
+    print("Main Model Bypass!")
+    
+    # Define test configurations
+    datasets = ['CBSD68', 'mcmaster', 'kodak']
+    noise_levels = [15, 25, 50]
+    
+    # Store results
+    all_results = {}
+    
+    # Iterate through all configurations
+    for dataset_name in datasets:
+        dataset_results = {}
+        for noise_level in noise_levels:
+            print(f"\nTesting {dataset_name} with noise level {noise_level}")
+            
+            avg_psnr, avg_ssim = test_single_configuration(
+                main_model=main_model,
+                dataset_name=dataset_name,
+                noise_level=noise_level,
+                batch_size=batch_size,
+                crop_size=crop_size,
+                num_crops=num_crops,
+                device=device,
+                use_wandb=use_wandb
+            )
+            
+            # Store results
+            dataset_results[noise_level] = {
+                'psnr': avg_psnr,
+                'ssim': avg_ssim
+            }
+            
+            # Log to wandb if enabled
+            if use_wandb:
+                wandb.log({
+                    f"{dataset_name}_noise_{noise_level}_psnr": avg_psnr,
+                    f"{dataset_name}_noise_{noise_level}_ssim": avg_ssim
+                })
+        
+        all_results[dataset_name] = dataset_results
+    
+    # Print final results
+    print("\nFinal Results:")
+    for dataset_name, dataset_results in all_results.items():
+        print(f"\n{dataset_name} Results:")
+        for noise_level, metrics in dataset_results.items():
+            print(f"Noise Level {noise_level}:")
+            print(f"  PSNR: {metrics['psnr']:.4f}")
+            print(f"  SSIM: {metrics['ssim']:.4f}")
     
     if use_wandb:
-        wandb.log({
-            "avg_psnr_test": avg_psnr,
-            "avg_ssim_test": avg_ssim
-        })
         wandb.finish()
+    
+    return all_results
 
 def test_model(config):
     test(
