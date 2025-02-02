@@ -71,7 +71,7 @@ def test(
     elif test_dataset=='kodak':
         dataset = kodak(
             root_dir='/kaggle/input/kodak-test/kodak_test', 
-            noise_level=50,
+            noise_level=25,
             crop_size=256,
             num_crops=34,
             normalize=True,
