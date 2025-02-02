@@ -104,7 +104,7 @@ class Model(nn.Module):
             return swin_out.transpose(1, 2).reshape(B, C, H, W)
         else:
             # Original processing with element-wise maximum
-            max_feat = (feat1+feat2)/2
+            max_feat = torch.max(feat1,feat2)
             B, C, H, W = max_feat.shape
             feat_reshaped = max_feat.flatten(2).transpose(1, 2)
             swin_out = swin_block(feat_reshaped)
