@@ -68,6 +68,15 @@ def test(
             normalize=True,
             tanfi=True 
         )
+    elif test_dataset=='kodak':
+        dataset = McMasterDataset(
+            root_dir='/kaggle/input/mcmaster/McMaster', 
+            noise_level=15,
+            crop_size=256,
+            num_crops=34,
+            normalize=True,
+            tanfi=True 
+        )
 
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
     
