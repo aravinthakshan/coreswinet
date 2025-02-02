@@ -1,5 +1,5 @@
 from utils.trainer import train_model
-from inference import test_model
+from inference2 import test_model
 import argparse
 import wandb
 
