@@ -62,7 +62,7 @@ def test(
     elif test_dataset=='mcmaster':
         dataset = McMasterDataset(
             root_dir='/kaggle/input/mcmaster-proper/McMaster', 
-            noise_level=50,
+            noise_level=25,
             crop_size=256,
             num_crops=34,
             normalize=True,
