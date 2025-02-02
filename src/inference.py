@@ -133,7 +133,7 @@ def test(
     
     # Load model
     main_model = load_models(
-        '/kaggle/input/best_model15/pytorch/default/1/best_model (1).pth',
+        '/kaggle/input/final_model-something/pytorch/default/1/final_model (1).pth',
         device
     )
     main_model.to(device).eval()
