@@ -143,27 +143,27 @@ def train(
                 loss.backward()
                 optimizer.step()
                 
-                if epoch < bypass_epoch:
-                    contrastive_losses = []
-                    # weights = [0.01, 0.02, 0.03, 0.04, 0.05]  # Weights for different levels
-                    weights = [0.05, 0.04, 0.03, 0.02, 0.01] 
+                # if epoch < bypass_epoch:
+                #     contrastive_losses = []
+                #     # weights = [0.01, 0.02, 0.03, 0.04, 0.05]  # Weights for different levels
+                #     weights = [0.05, 0.04, 0.03, 0.02, 0.01] 
   
-                    for idx, (f1, f2) in enumerate(contrastive_features):
-                        if idx < len(weights):  
-                            level_loss = contrastive_loss_fn(f1, f2)
-                            weighted_loss = weights[idx] * level_loss
-                            contrastive_losses.append(weighted_loss)
+                #     for idx, (f1, f2) in enumerate(contrastive_features):
+                #         if idx < len(weights):  
+                #             level_loss = contrastive_loss_fn(f1, f2)
+                #             weighted_loss = weights[idx] * level_loss
+                #             contrastive_losses.append(weighted_loss)
                     
-                    # Sum all weighted contrastive losses
-                    total_contrastive_loss = sum(contrastive_losses)
+                #     # Sum all weighted contrastive losses
+                #     total_contrastive_loss = sum(contrastive_losses)
                     
-                    # Final loss calculation
-                    loss = mse_loss + total_contrastive_loss + 0.1 * psnr_loss
-                else:
-                    loss = mse_loss + 0.1 * psnr_loss
+                #     # Final loss calculation
+                #     loss = mse_loss + total_contrastive_loss + 0.1 * psnr_loss
+                # else:
+                #     loss = mse_loss + 0.1 * psnr_loss
 
-                loss.backward()
-                optimizer.step()
+                # loss.backward()
+                # optimizer.step()
                 # Calculate metrics
                 psnr_train_itr, ssim_train_itr = get_metrics(clean, output, psnr_metric, ssim_metric)
                 
