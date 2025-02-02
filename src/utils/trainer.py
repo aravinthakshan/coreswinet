@@ -127,26 +127,46 @@ def train(
                 mse_loss = mse_criterion(output, clean)
                 psnr_loss = psnr_loss_func(output, clean)
 
+                # if epoch < bypass_epoch:
+                #     all_f1 = []
+                #     all_f2 = []
+                    
+                #     for f1, f2 in contrastive_features:
+                #         all_f1.append(f1)
+                #         all_f2.append(f2)
+                    
+                #     # Concatenate all features along the feature dimension
+                #     combined_f1 = torch.cat(all_f1, dim=1)  
+                #     combined_f2 = torch.cat(all_f2, dim=1) 
+                    
+                #     # Calculate single contrastive loss on concatenated features
+                #     contrastive_loss = contrastive_loss_fn(combined_f1, combined_f2)
+                #     loss = mse_loss + 0.01 * contrastive_loss + 0.1 * psnr_loss
+                # else:
+                #     loss = mse_loss + 0.01 * psnr_loss
+                # loss.backward()
+                # optimizer.step()
+                
                 if epoch < bypass_epoch:
-                    all_f1 = []
-                    all_f2 = []
+                    contrastive_losses = []
+                    weights = [0.01, 0.02, 0.03, 0.04, 0.05]  # Weights for different levels
                     
-                    for f1, f2 in contrastive_features:
-                        all_f1.append(f1)
-                        all_f2.append(f2)
+                    for idx, (f1, f2) in enumerate(contrastive_features):
+                        if idx < len(weights):  
+                            level_loss = contrastive_loss_fn(f1, f2)
+                            weighted_loss = weights[idx] * level_loss
+                            contrastive_losses.append(weighted_loss)
                     
-                    # Concatenate all features along the feature dimension
-                    combined_f1 = torch.cat(all_f1, dim=1)  
-                    combined_f2 = torch.cat(all_f2, dim=1) 
+                    # Sum all weighted contrastive losses
+                    total_contrastive_loss = sum(contrastive_losses)
                     
-                    # Calculate single contrastive loss on concatenated features
-                    contrastive_loss = contrastive_loss_fn(combined_f1, combined_f2)
-                    loss = mse_loss + 0.01 * contrastive_loss + 0.1 * psnr_loss
+                    # Final loss calculation
+                    loss = mse_loss + total_contrastive_loss + 0.1 * psnr_loss
                 else:
-                    loss = mse_loss + 0.01 * psnr_loss
+                    loss = mse_loss + 0.1 * psnr_loss
+
                 loss.backward()
                 optimizer.step()
-                
                 # Calculate metrics
                 psnr_train_itr, ssim_train_itr = get_metrics(clean, output, psnr_metric, ssim_metric)
                 
