@@ -53,7 +53,7 @@ def test(
     if test_dataset=='CBSD68':
         dataset = CBSD68Dataset(
             root_dir='/kaggle/input/cbsd68/CBSD68', 
-            noise_level=50,
+            noise_level=15,
             crop_size=256,
             num_crops=34,
             normalize=True,
@@ -62,7 +62,7 @@ def test(
     elif test_dataset=='mcmaster':
         dataset = McMasterDataset(
             root_dir='/kaggle/input/mcmaster/McMaster', 
-            noise_level=50,
+            noise_level=15,
             crop_size=256,
             num_crops=34,
             normalize=True,
