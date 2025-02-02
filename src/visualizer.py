@@ -137,7 +137,7 @@ def main_vis(test_dir, use_wandb=True, noise_level=25, crop_size=256, num_crops=
         with torch.no_grad():
         #    output_n2n = n2n_model.denoise(noise)
             output_n2n = un_tan_fi(clean)
-            output_main, _, _ = main_model(noise, output_n2n)
+            output_main, _ = main_model(noise, output_n2n)
         
         # Get metrics for both models
         psnr_main, ssim_main = get_metrics(clean, output_main, psnr_metric, ssim_metric)
