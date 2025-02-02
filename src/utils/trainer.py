@@ -188,12 +188,8 @@ def train(
                 for batch_data in loader:
                     noise, clean = [x.to(device) for x in batch_data]        
 
-                    # if use_n2n:
-                    #     n2n_output = n2n_model.denoise(noise)
-                    # else:
-                    #     n2n_output = noise
                     n2n_output = un_tan_fi(clean) ##note
-                    output, _, _ = model(noise, n2n_output)
+                    output, _ = model(noise, n2n_output)
                     psnr_val_itr, ssim_val_itr = get_metrics(clean, output, psnr_metric, ssim_metric)
                     psnr_val += psnr_val_itr
                     ssim_val += ssim_val_itr
