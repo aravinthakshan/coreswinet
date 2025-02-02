@@ -70,7 +70,7 @@ def test_single_configuration(
     dataset = dataset_class(
         root_dir=dataset_paths[dataset_name],
         noise_level=noise_level,
-        crop_size=crop_size,
+        crop_size=256,
         num_crops=34,
         normalize=True,
         tanfi=True
