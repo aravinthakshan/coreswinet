@@ -54,7 +54,7 @@ def test_single_configuration(
     # Dataset paths mapping
     dataset_paths = {
         'CBSD68': '/kaggle/input/cbsd68/CBSD68',
-        # 'mcmaster': '/kaggle/input/mcmaster/McMaster',
+        'mcmaster': '/kaggle/input/mcmaster-proper/McMaster',
         'kodak': '/kaggle/input/kodak-test/kodak_test'
     }
     
@@ -141,7 +141,7 @@ def test(
     print("Main Model Bypass!")
     
     # Define test configurations
-    datasets = ['CBSD68', 'mcmaster', 'kodak']
+    datasets = ['CBSD68', 'mcmaster','kodak'] #  'mcmaster',
     noise_levels = [15, 25, 50]
     
     # Store results
