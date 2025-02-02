@@ -41,7 +41,7 @@ def test(
         })
     
     main_model = load_models(
-        '/kaggle/input/trainon50waterloo/best_model (2).pth',
+        '/kaggle/input/trainon25waterloo/best_model (3).pth',
         device
     )
 
@@ -53,7 +53,7 @@ def test(
     if test_dataset=='CBSD68':
         dataset = CBSD68Dataset(
             root_dir='/kaggle/input/cbsd68/CBSD68', 
-            noise_level=25,
+            noise_level=15,
             crop_size=256,
             num_crops=34,
             normalize=True,
@@ -61,8 +61,8 @@ def test(
         )
     elif test_dataset=='mcmaster':
         dataset = McMasterDataset(
-            root_dir='/kaggle/input/mcmaster/McMaster', 
-            noise_level=25,
+            root_dir='/kaggle/input/mcmaster-proper/McMaster', 
+            noise_level=15,
             crop_size=256,
             num_crops=34,
             normalize=True,

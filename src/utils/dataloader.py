@@ -498,7 +498,7 @@ class McMasterDataset(Dataset):
         self.original_dir = os.path.join(root_dir, "McMaster_noisy_0")
         self.noisy_dir = os.path.join(root_dir, "McMaster_"+self.noise_level)
 
-        self.image_paths = [fname for fname in os.listdir(self.original_dir) if fname.endswith('.png')]
+        self.image_paths = [fname for fname in os.listdir(self.original_dir) if fname.endswith('.tif')]
 
         self.image_pairs = []
         for img_name in self.image_paths:
