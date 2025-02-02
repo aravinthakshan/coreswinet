@@ -50,7 +50,7 @@ def test_single_configuration(
     noise_level = int(noise_level)
     batch_size = int(batch_size)
     crop_size = int(crop_size)
-    num_crops = int(num_crops)
+    # num_crops = int(num_crops)
     # Dataset paths mapping
     dataset_paths = {
         'CBSD68': '/kaggle/input/cbsd68/CBSD68',
@@ -71,7 +71,7 @@ def test_single_configuration(
         root_dir=dataset_paths[dataset_name],
         noise_level=noise_level,
         crop_size=crop_size,
-        num_crops=num_crops,
+        num_crops=34,
         normalize=True,
         tanfi=True
     )
@@ -128,7 +128,7 @@ def test(
     if use_wandb:
         wandb.init(project="DeFInet", config={
             "crop_size": crop_size,
-            "num_crops": num_crops
+            "num_crops": 34
         })
     
     # Load model
