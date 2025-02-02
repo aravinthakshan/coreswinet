@@ -61,7 +61,7 @@ def test_single_configuration(
     # Dataset class mapping
     dataset_classes = {
         'CBSD68': CBSD68Dataset,
-        # 'mcmaster': McMasterDataset,
+        'mcmaster': McMasterDataset,
         'kodak': kodak
     }
     
@@ -141,7 +141,7 @@ def test(
     print("Main Model Bypass!")
     
     # Define test configurations
-    datasets = ['CBSD68', 'mcmaster','kodak'] #  'mcmaster',
+    datasets = ['CBSD68', 'mcmaster','kodak'] 
     noise_levels = [15, 25, 50]
     
     # Store results
