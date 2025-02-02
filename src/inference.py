@@ -46,6 +46,11 @@ def test_single_configuration(
     Returns:
         tuple: (avg_psnr, avg_ssim) for this configuration
     """
+        # Convert numeric parameters to correct types
+    noise_level = int(noise_level)
+    batch_size = int(batch_size)
+    crop_size = int(crop_size)
+    num_crops = int(num_crops)
     # Dataset paths mapping
     dataset_paths = {
         'CBSD68': '/kaggle/input/cbsd68/CBSD68',
