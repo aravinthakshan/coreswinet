@@ -91,8 +91,8 @@ def test_single_configuration(
     # Testing loop
     with tqdm(dataloader, desc=f"Testing {dataset_name} - Noise {noise_level}") as loader:
         for noise, clean in loader:
-            noise, clean = noise.to(device), clean.to(device)
-            clean = un_tan_fi(clean)
+            
+            clean = un_tan_fi(clean) ## ---> remove this later
             
             with torch.no_grad():
                 output_n2n = un_tan_fi(clean)
