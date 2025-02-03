@@ -355,6 +355,7 @@ class SIDD(Dataset):
         self.size = size
         self.normalize = normalize
         self.standardize = standardize
+        self.tanfi=tanfi
 
         if mode == "train":
             self.data_dir = data_dir
