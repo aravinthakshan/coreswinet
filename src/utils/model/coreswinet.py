@@ -9,6 +9,20 @@ from utils.model.archs.ZSN2N import N2NNetwork
 # from archs.SwinBlocks import SwinTransformerBlock
 # from archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
 
+class PReLUBlock(nn.Module):
+    def __init__(self, channels):
+        super().__init__()
+        self.block = nn.Sequential(
+            nn.Conv2d(channels, channels, kernel_size=3, stride=1, padding=1),
+            nn.PReLU(),
+            nn.Conv2d(channels, channels, kernel_size=3, stride=1, padding=1),
+            nn.PReLU(),
+        )
+    
+    def forward(self, x):
+        return self.block(x)
+    
+    
 class Model(nn.Module):
     def __init__(self, in_channels=3, contrastive=True, bypass=False):
         super().__init__()
