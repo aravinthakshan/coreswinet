@@ -3,25 +3,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 import segmentation_models_pytorch as smp
 from torchsummary import summary
-from utils.model.archs.SwinBlocks import SwinTransformerBlock
-from utils.model.archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
-from utils.model.archs.ZSN2N import N2NNetwork
-# from archs.SwinBlocks import SwinTransformerBlock
-# from archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
-
-class PReLUBlock(nn.Module):
-    def __init__(self, channels):
-        super().__init__()
-        self.block = nn.Sequential(
-            nn.Conv2d(channels, channels, kernel_size=3, stride=1, padding=1),
-            nn.PReLU(),
-            nn.Conv2d(channels, channels, kernel_size=3, stride=1, padding=1),
-            nn.PReLU(),
-        )
-    
-    def forward(self, x):
-        return self.block(x)
-    
+# from utils.model.archs.SwinBlocks import SwinTransformerBlock
+# from utils.model.archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
+# from utils.model.archs.ZSN2N import N2NNetwork
+from archs.SwinBlocks import SwinTransformerBlock
+from archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
     
 class Model(nn.Module):
     def __init__(self, in_channels=3, contrastive=True, bypass=False):
@@ -49,7 +35,7 @@ class Model(nn.Module):
         self.encoder1 = self.unet1.encoder
         self.encoder2 = self.unet2.encoder
         self.decoder = self.unet1.decoder
-
+        
         encoder_channels = self.encoder1.out_channels
 
         # Create Swin Transformer block for each encoder level
@@ -169,79 +155,80 @@ class Model(nn.Module):
         if self.contrastive:
             return output, contrastive_features
         return output
-    
-if __name__ == "__main__":
-    import torch
-    import segmentation_models_pytorch as smp
-    
-    # Set random seed for reproducibility
-    torch.manual_seed(42)
-    
-    # Initialize model
-    model = Model(in_channels=3, contrastive=True, bypass=False)
-    model.eval()  # Set to evaluation mode
-    
-    # Create dummy input data (batch_size=2, channels=3, height=256, width=256)
-    batch_size = 2
-    x_noisy = torch.randn(batch_size, 3, 256, 256)
-    x_n2n = torch.randn(batch_size, 3, 256, 256)
-    
-    # Forward pass
-    with torch.no_grad():
-        output, contrastive_features = model(x_noisy, x_n2n)
-    
-    # Print shapes of all outputs
-    print("\n=== Output Shapes ===")
-    print(f"Main output shape: {output.shape}")  # Should be [batch_size, 3, 256, 256]
-    
-    print("\n=== Contrastive Feature Shapes ===")
-    for i, (f1, f2) in enumerate(contrastive_features):
-        print(f"\nEncoder Level {i}:")
-        print(f"f1 shape: {f1.shape}")  # Should be [batch_size, 64]
-        print(f"f2 shape: {f2.shape}")  # Should be [batch_size, 64]
-    
-    # Print encoder channel dimensions for reference
-    print("\n=== Encoder Channel Dimensions ===")
-    encoder_channels = model.encoder1.out_channels
-    for i, channels in enumerate(encoder_channels):
-        print(f"Level {i}: {channels} channels")
+
+model = Model(in_channels=3)
+import torch
+import torch.nn as nn
+
+class BlindSpotConv2d(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size=3):
+        super(BlindSpotConv2d, self).__init__()
+        self.kernel_size = kernel_size
+        self.vertical_conv = nn.Conv2d(in_channels, out_channels, kernel_size=(kernel_size, 1), padding=(kernel_size-1, 0))
+        self.horizontal_conv = nn.Conv2d(in_channels, out_channels, kernel_size=(1, kernel_size), padding=(0, kernel_size-1))
+        self.register_buffer('center_mask', self._create_center_mask())
         
-    # Verify bypass mode
-    print("\n=== Testing Bypass Mode ===")
-    model_bypass = Model(in_channels=3, contrastive=True, bypass=True)
-    model_bypass.eval()
-    
-    with torch.no_grad():
-        output_bypass, contrastive_features_bypass = model_bypass(x_noisy, x_n2n)
-    
-    print("\nBypass Mode - Output Shapes:")
-    print(f"Main output shape: {output_bypass.shape}")
-    
-    print("\nBypass Mode - Contrastive Feature Shapes:")
-    for i, (f1, f2) in enumerate(contrastive_features_bypass):
-        print(f"\nEncoder Level {i}:")
-        print(f"f1 shape: {f1.shape}")
-        print(f"f2 shape: {f2.shape}")
+    def _create_center_mask(self):
+        mask = torch.ones(1, 1, self.kernel_size, self.kernel_size)
+        center = self.kernel_size // 2
+        mask[0, 0, center, center] = 0
+        return mask
         
-    # Verify memory efficiency
-    def get_model_size(model):
-        param_size = 0
-        for param in model.parameters():
-            param_size += param.nelement() * param.element_size()
-        buffer_size = 0
-        for buffer in model.buffers():
-            buffer_size += buffer.nelement() * buffer.element_size()
-        return (param_size + buffer_size) / 1024**2  # Size in MB
+    def forward(self, x):
+        vertical = self.vertical_conv(x)
+        horizontal = self.horizontal_conv(x)
+        combined = vertical + horizontal
+        return combined * self.center_mask
+
+def replace_decoder_convs(model):
+    conv_count = 0
+    replaced_count = 0
     
-    print(f"\n=== Model Memory Usage ===")
-    print(f"Model size: {get_model_size(model):.2f} MB")
+    def _is_in_decoder(module_path):
+        return 'decoder' in module_path
     
-    # Test contrastive=False mode
-    model_no_contrastive = Model(in_channels=3, contrastive=False, bypass=False)
-    model_no_contrastive.eval()
+    def _replace_conv_in_module(module, path=''):
+        nonlocal conv_count, replaced_count
+        
+        for name, child in module.named_children():
+            current_path = f"{path}.{name}" if path else name
+            
+            if isinstance(child, nn.Conv2d):
+                conv_count += 1
+                if _is_in_decoder(current_path):
+                    new_conv = BlindSpotConv2d(
+                        in_channels=child.in_channels,
+                        out_channels=child.out_channels,
+                        kernel_size=child.kernel_size[0]
+                    )
+                    
+                    # Initialize vertical and horizontal convs with original weights
+                    with torch.no_grad():
+                        # For vertical conv
+                        new_conv.vertical_conv.weight.data = child.weight.data.clone()[:, :, :, child.kernel_size[1]//2:child.kernel_size[1]//2+1]
+                        if child.bias is not None:
+                            new_conv.vertical_conv.bias = nn.Parameter(child.bias.data.clone())
+                            
+                        # For horizontal conv
+                        new_conv.horizontal_conv.weight.data = child.weight.data.clone()[:, :, child.kernel_size[0]//2:child.kernel_size[0]//2+1, :]
+                        if child.bias is not None:
+                            new_conv.horizontal_conv.bias = nn.Parameter(child.bias.data.clone())
+                    
+                    setattr(module, name, new_conv)
+                    replaced_count += 1
+                    print(f"Replaced Conv2d in {current_path}")
+            
+            if len(list(child.children())) > 0:
+                _replace_conv_in_module(child, current_path)
     
-    with torch.no_grad():
-        output_no_contrastive = model_no_contrastive(x_noisy, x_n2n)
+    _replace_conv_in_module(model)
+    print(f"\nSummary:")
+    print(f"Total Conv2d layers: {conv_count}")
+    print(f"Decoder Conv2d layers replaced: {replaced_count}")
     
-    print("\n=== No Contrastive Mode ===")
-    print(f"Output shape: {output_no_contrastive.shape}")
+    return model
+
+check = replace_decoder_convs(model)
+
+for name, module in check.named_children():
+    print(name,module)
