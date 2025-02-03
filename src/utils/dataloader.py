@@ -349,7 +349,7 @@ import scipy.io
 
 
 class SIDD(Dataset):
-    def __init__(self, data_dir, transform=None, size=256, normalize=False, standardize=False, mode="train"):
+    def __init__(self, data_dir, transform=None, size=256, normalize=True, standardize=False, mode="train",tanfi=True):
         self.mode = mode
         self.transform = transform
         self.size = size
@@ -442,6 +442,8 @@ class SIDD(Dataset):
             noisy_img = self.normalize_image(noisy_img)
             if noiseless_img is not None:
                 noiseless_img = self.normalize_image(noiseless_img)
+        if self.tanfi:
+            noiseless_img=tan_fi(noiseless_img)
         
         if self.standardize:
             noisy_img = self.standardize_image(noisy_img)
