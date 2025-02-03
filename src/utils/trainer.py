@@ -136,7 +136,7 @@ def train(
                                             
                     total_contrastive_loss = sum(level_contrastive_losses)
                     
-                    loss = mse_loss + 0.01 * total_contrastive_loss + 0.1 * psnr_loss
+                    loss = mse_loss + 0.1 * total_contrastive_loss + 0.1 * psnr_loss
                 else:
                     loss = mse_loss + 0.1 * psnr_loss
 
