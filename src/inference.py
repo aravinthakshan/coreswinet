@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import argparse
-from utils.model.coreswinet import Model
+from utils.model.coreswinet import Model, replace_decoder_convs
 from PIL import Image
 import matplotlib.pyplot as plt
 import os
@@ -46,6 +46,7 @@ def test(
     )
 
     main_model.to(device).eval()
+
     # n2n_model.to(device).eval()
     
     main_model.bypass = True 

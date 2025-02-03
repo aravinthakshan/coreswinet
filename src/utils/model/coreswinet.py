@@ -232,3 +232,64 @@ check = replace_decoder_convs(model)
 
 for name, module in check.named_children():
     print(name,module)
+    
+    
+
+from torchsummary import summary
+
+def main():
+    # Set device
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using device: {device}")
+    
+    # Initialize model
+    model = Model(in_channels=3, contrastive=True).to(device)
+    
+    # Create sample input tensors (assuming 256x256 input size based on model architecture)
+    batch_size = 2
+    x_noisy = torch.randn(batch_size, 3, 256, 256).to(device)
+    x_n2n = torch.randn(batch_size, 3, 256, 256).to(device)
+    
+    # Test model in evaluation mode
+    model.eval()
+    with torch.no_grad():
+        try:
+            # Test with contrastive=True
+            output, contrastive_features = model(x_noisy, x_n2n)
+            
+            # Print shapes
+            print("\nOutput shapes with contrastive=True:")
+            print(f"Main output shape: {output.shape}")
+            print("\nContrastive feature shapes:")
+            for i, (f1, f2) in enumerate(contrastive_features):
+                print(f"Level {i}:")
+                print(f"  f1 shape: {f1.shape}")
+                print(f"  f2 shape: {f2.shape}")
+            
+            # Test bypass mode
+            model.bypass = True
+            output_bypass, contrastive_features_bypass = model(x_noisy, x_n2n)
+            print("\nBypass mode output shape:", output_bypass.shape)
+            
+            # Verify output ranges (should be between -1 and 1 due to Tanh)
+            print("\nOutput statistics:")
+            print(f"Min value: {output.min().item():.3f}")
+            print(f"Max value: {output.max().item():.3f}")
+            
+            # Test model with contrastive=False
+            model_no_contrastive = Model(in_channels=3, contrastive=False).to(device)
+            output_no_contrastive = model_no_contrastive(x_noisy, x_n2n)
+            print("\nOutput shape with contrastive=False:", output_no_contrastive.shape)
+            
+            # Additional checks
+            print("\nModel structure validation:")
+            print(f"Number of Swin blocks: {len(model.swin_blocks)}")
+            print(f"Number of contrastive heads: {len(model.contrastive_heads1)}")
+            print(f"Encoder channels: {model.encoder1.out_channels}")
+            
+        except Exception as e:
+            print(f"\nError during model execution: {str(e)}")
+            raise e
+
+if __name__ == "__main__":
+    main()

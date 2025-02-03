@@ -1,7 +1,7 @@
 import wandb
 from torch.utils.data import DataLoader
 from utils.misc import get_metrics, visualize_epoch, un_tan_fi
-from utils.model.coreswinet import Model
+from utils.model.coreswinet import Model, replace_decoder_convs
 # from utils.model.newmodel import Model
 from utils.dataloader import CBSD68Dataset, Waterloo,DIV2K,BSD400,SIDD,get_training_augmentation
 from tqdm import tqdm
@@ -53,14 +53,11 @@ def train(
     print(f"Images per epoch Val: {len(val_loader) * val_loader.batch_size}")
     # Train N2N model
     print("Training N2N model...")
-    model = N2NNetwork()  ### N2N
-    n2n_model, psnr_threshold = train_n2n(epochs=n2n_epochs, model=model, dataloader=train_loader)
-    print("PSNR THRESHOLD:", psnr_threshold)
-    n2n_model.eval()
 
     # Initialize main model with bypass parameter
     model = Model(contrastive=True, bypass=False).to(device)
-    
+    model = replace_decoder_convs(model)
+
     # Optimizer
     optimizer = SOAP(
         model.parameters(),
@@ -212,13 +209,7 @@ def train(
                 }, './main_model/best_model.pth')
                 print(f"Saved main model at epoch {epoch}.")
                 
-                torch.save({
-                    'epoch': epoch,
-                    'model_state_dict': n2n_model.state_dict(),
-                    'max_ssim': max_ssim,
-                    'max_psnr': max_psnr,
-                }, './n2n_model/best_model_n2n.pth')
-                
+
                 print(f"Saved n2n model at epoch {epoch}.")
                 print(f"Saved Models at epoch {epoch}.")
                 
