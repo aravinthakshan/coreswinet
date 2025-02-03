@@ -135,7 +135,7 @@ def test(
     
     # Load model
     main_model = load_models(
-        '/kaggle/input/siddtrained/best_model (4).pth',
+        './main_model/best_model.pth',
         device
     )
     main_model.to(device).eval()
