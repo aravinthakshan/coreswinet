@@ -53,7 +53,7 @@ def test_single_configuration(
     # num_crops = int(num_crops)
     # Dataset paths mapping
     dataset_paths = {
-        'CBSD68': '/kaggle/input/cbsd68/CBSD68',
+        'CBSD68': '/kaggle/input/d/aryamangupta04/cbsd68/CBSD68',
         'mcmaster': '/kaggle/input/mcmaster-proper/McMaster',
         'kodak': '/kaggle/input/kodak-test/kodak_test'
     }
@@ -134,7 +134,7 @@ def test(
     
     # Load model
     main_model = load_models(
-        '/kaggle/input/best_model15/pytorch/default/1/best_model (1).pth',
+        '/kaggle/input/siddtrained/best_model (4).pth',
         device
     )
     main_model.to(device).eval()
