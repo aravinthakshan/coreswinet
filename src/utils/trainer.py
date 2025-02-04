@@ -232,7 +232,7 @@ def train(
             print(f"\nVal PSNR: {psnr_val:.4f}")
             print(f"Val SSIM: {ssim_val:.4f}")
             
-            if model.bypass==True:
+            if epoch == 20:
                 torch.save({
                     'epoch': epoch,
                     'model_state_dict': model.state_dict(),
