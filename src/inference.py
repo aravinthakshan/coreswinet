@@ -53,7 +53,7 @@ def test(
     print("Main Model Bypass!")
     if test_dataset=='CBSD68':
         dataset = CBSD68Dataset(
-            root_dir='/kaggle/input/cbsd68/CBSD68', 
+            root_dir='/kaggle/input/d/aryamangupta04/cbsd68/CBSD68', 
             noise_level=25,
             crop_size=256,
             num_crops=34,
