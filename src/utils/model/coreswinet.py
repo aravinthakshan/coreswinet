@@ -3,11 +3,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 import segmentation_models_pytorch as smp
 from torchsummary import summary
-from utils.model.archs.SwinBlocks import SwinTransformerBlock
-from utils.model.archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
-from utils.model.archs.ZSN2N import N2NNetwork
-# from archs.SwinBlocks import SwinTransformerBlock
-# from archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
+# from utils.model.archs.SwinBlocks import SwinTransformerBlock
+# from utils.model.archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
+# from utils.model.archs.ZSN2N import N2NNetwork
+from archs.SwinBlocks import SwinTransformerBlock
+from archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
     
 class Model(nn.Module):
     def __init__(self, in_channels=3, contrastive=True, bypass=False):
@@ -156,30 +156,72 @@ class Model(nn.Module):
             return output, contrastive_features
         return output
 
-model = Model(in_channels=3)
-import torch
-import torch.nn as nn
+class BlindSpotConv2d(nn.Conv2d):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-class BlindSpotConv2d(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size=3):
-        super(BlindSpotConv2d, self).__init__()
-        self.kernel_size = kernel_size
-        self.vertical_conv = nn.Conv2d(in_channels, out_channels, kernel_size=(kernel_size, 1), padding=(kernel_size-1, 0))
-        self.horizontal_conv = nn.Conv2d(in_channels, out_channels, kernel_size=(1, kernel_size), padding=(0, kernel_size-1))
-        self.register_buffer('center_mask', self._create_center_mask())
-        
-    def _create_center_mask(self):
-        mask = torch.ones(1, 1, self.kernel_size, self.kernel_size)
-        center = self.kernel_size // 2
-        mask[0, 0, center, center] = 0
-        return mask
-        
+        self.register_buffer('mask', self.weight.data.clone())
+        _, _, kH, kW = self.weight.size()
+        self.mask.fill_(1)
+        self.mask[:, :, kH//2, kH//2] = 0
+
     def forward(self, x):
-        vertical = self.vertical_conv(x)
-        horizontal = self.horizontal_conv(x)
-        combined = vertical + horizontal
-        return combined * self.center_mask
-
+        self.weight.data *= self.mask
+        return super().forward(x)
+    
+# class BlindSpotConv2d(nn.Module):
+#     def __init__(self, in_channels, out_channels, kernel_size=3):
+#         super(BlindSpotConv2d, self).__init__()
+#         self.kernel_size = kernel_size
+        
+#         # Create masked convolutions
+#         self.vertical_conv = nn.Conv2d(in_channels, out_channels, 
+#                                      kernel_size=(kernel_size, 1))
+#         self.horizontal_conv = nn.Conv2d(in_channels, out_channels, 
+#                                      kernel_size=(1, kernel_size))
+        
+#         # Apply masks to convolution weights
+#         self._apply_masks()
+        
+#     def _apply_masks(self):
+#         center = self.kernel_size // 2
+        
+#         # Create vertical mask: zeros for center and below
+#         vertical_mask = torch.ones(self.kernel_size, 1)
+#         vertical_mask[center:] = 0
+#         self.vertical_conv.weight.data *= vertical_mask.view(1, 1, -1, 1)
+        
+#         # Create horizontal mask: zeros for center and right
+#         horizontal_mask = torch.ones(1, self.kernel_size)
+#         horizontal_mask[0, center:] = 0
+#         self.horizontal_conv.weight.data *= horizontal_mask.view(1, 1, 1, -1)
+    
+#     def forward(self, x):
+#         # Calculate required padding
+#         pad_size = self.kernel_size - 1
+        
+#         # Apply same padding for both convolutions to maintain spatial dimensions
+#         # pad_size for vertical: (left, right, top, bottom)
+#         vpad = (0, 0, pad_size, 0)
+#         # pad_size for horizontal: (left, right, top, bottom) 
+#         hpad = (pad_size, 0, 0, 0)
+        
+#         # Apply padded convolutions
+#         vertical = self.vertical_conv(F.pad(x, vpad))
+#         horizontal = self.horizontal_conv(F.pad(x, hpad))
+        
+#         if vertical.size(2) > horizontal.size(2):
+#             vertical = vertical[:, :, :horizontal.size(2), :]
+#         elif horizontal.size(2) > vertical.size(2):
+#             horizontal = horizontal[:, :, :vertical.size(2), :]
+            
+#         if vertical.size(3) > horizontal.size(3):
+#             vertical = vertical[:, :, :, :horizontal.size(3)]
+#         elif horizontal.size(3) > vertical.size(3):
+#             horizontal = horizontal[:, :, :, :vertical.size(3)]
+        
+#         return vertical + horizontal
+    
 def replace_decoder_convs(model):
     conv_count = 0
     replaced_count = 0
@@ -193,26 +235,26 @@ def replace_decoder_convs(model):
         for name, child in module.named_children():
             current_path = f"{path}.{name}" if path else name
             
-            if isinstance(child, nn.Conv2d):
+            if isinstance(child, nn.Conv2d) and not isinstance(child, BlindSpotConv2d):
                 conv_count += 1
                 if _is_in_decoder(current_path):
                     new_conv = BlindSpotConv2d(
                         in_channels=child.in_channels,
                         out_channels=child.out_channels,
-                        kernel_size=child.kernel_size[0]
+                        kernel_size=child.kernel_size,
+                        stride=child.stride,
+                        padding=child.padding,
+                        dilation=child.dilation,
+                        groups=child.groups,
+                        bias=child.bias is not None,
+                        padding_mode=child.padding_mode
                     )
                     
-                    # Initialize vertical and horizontal convs with original weights
+                    # Initialize weights with original conv weights
                     with torch.no_grad():
-                        # For vertical conv
-                        new_conv.vertical_conv.weight.data = child.weight.data.clone()[:, :, :, child.kernel_size[1]//2:child.kernel_size[1]//2+1]
+                        new_conv.weight.data = child.weight.data.clone()
                         if child.bias is not None:
-                            new_conv.vertical_conv.bias = nn.Parameter(child.bias.data.clone())
-                            
-                        # For horizontal conv
-                        new_conv.horizontal_conv.weight.data = child.weight.data.clone()[:, :, child.kernel_size[0]//2:child.kernel_size[0]//2+1, :]
-                        if child.bias is not None:
-                            new_conv.horizontal_conv.bias = nn.Parameter(child.bias.data.clone())
+                            new_conv.bias.data = child.bias.data.clone()
                     
                     setattr(module, name, new_conv)
                     replaced_count += 1
@@ -227,15 +269,53 @@ def replace_decoder_convs(model):
     print(f"Decoder Conv2d layers replaced: {replaced_count}")
     
     return model
-
-check = replace_decoder_convs(model)
-
-for name, module in check.named_children():
-    print(name,module)
+# def replace_decoder_convs(model):
+#     conv_count = 0
+#     replaced_count = 0
     
+#     def _is_in_decoder(module_path):
+#         return 'decoder' in module_path
     
-
-from torchsummary import summary
+#     def _replace_conv_in_module(module, path=''):
+#         nonlocal conv_count, replaced_count
+        
+#         for name, child in module.named_children():
+#             current_path = f"{path}.{name}" if path else name
+            
+#             if isinstance(child, nn.Conv2d):
+#                 conv_count += 1
+#                 if _is_in_decoder(current_path):
+#                     new_conv = BlindSpotConv2d(
+#                         in_channels=child.in_channels,
+#                         out_channels=child.out_channels,
+#                         kernel_size=child.kernel_size[0]
+#                     )
+                    
+#                     # Initialize vertical and horizontal convs with original weights
+#                     with torch.no_grad():
+#                         # For vertical conv
+#                         new_conv.vertical_conv.weight.data = child.weight.data.clone()[:, :, :, child.kernel_size[1]//2:child.kernel_size[1]//2+1]
+#                         if child.bias is not None:
+#                             new_conv.vertical_conv.bias = nn.Parameter(child.bias.data.clone())
+                            
+#                         # For horizontal conv
+#                         new_conv.horizontal_conv.weight.data = child.weight.data.clone()[:, :, child.kernel_size[0]//2:child.kernel_size[0]//2+1, :]
+#                         if child.bias is not None:
+#                             new_conv.horizontal_conv.bias = nn.Parameter(child.bias.data.clone())
+                    
+#                     setattr(module, name, new_conv)
+#                     replaced_count += 1
+#                     print(f"Replaced Conv2d in {current_path}")
+            
+#             if len(list(child.children())) > 0:
+#                 _replace_conv_in_module(child, current_path)
+    
+#     _replace_conv_in_module(model)
+#     print(f"\nSummary:")
+#     print(f"Total Conv2d layers: {conv_count}")
+#     print(f"Decoder Conv2d layers replaced: {replaced_count}")
+    
+#     return model    
 
 def main():
     # Set device
@@ -244,7 +324,9 @@ def main():
     
     # Initialize model
     model = Model(in_channels=3, contrastive=True).to(device)
-    
+    model = replace_decoder_convs(model)
+    model.to(device)
+
     # Create sample input tensors (assuming 256x256 input size based on model architecture)
     batch_size = 2
     x_noisy = torch.randn(batch_size, 3, 256, 256).to(device)

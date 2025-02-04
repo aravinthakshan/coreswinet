@@ -374,7 +374,7 @@ if __name__ == '__main__':
     # Test normal forward pass
     x1 = torch.randn(1, 3, 128, 128)
     x2 = torch.randn(1, 3, 128, 128)
-    M = Model(dim=36, contrastive=True)
+    M = Model(dim=36, contrastive=True, bypass=False)
     y, f1, f2 = M(x1, x2)
     print(f"Output shape: {y.shape}")
     print(f1)
