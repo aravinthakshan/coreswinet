@@ -232,6 +232,14 @@ def train(
             print(f"\nVal PSNR: {psnr_val:.4f}")
             print(f"Val SSIM: {ssim_val:.4f}")
             
+            if model.bypass==True:
+                torch.save({
+                    'epoch': epoch,
+                    'model_state_dict': model.state_dict(),
+                    'max_ssim': max_ssim,
+                    'max_psnr': max_psnr,
+                }, './main_model/pretrained.pth')
+
             if wandb_debug:
                 # visualize_epoch(model, n2n_model, val_loader, device, epoch, wandb_debug)
                 wandb.log(logger)
