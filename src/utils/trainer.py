@@ -219,10 +219,6 @@ def train(
                 # visualize_epoch(model, n2n_model, val_loader, device, epoch, wandb_debug)
                 wandb.log(logger)
         
-        # # Check if max_psnr exceeds threshold
-        # if max_psnr > psnr_threshold:
-        #     print(f"PSNR threshold exceeded at epoch {epoch + 1}. Disabling N2N model.")
-
     
            # After the main training loop ends
     print("\nTraining completed. Saving final models...")
