@@ -118,19 +118,19 @@ def train(
                 n2n_output = un_tan_fi(clean)# feeding ground truth  
                                   
                 optimizer.zero_grad()
-                output, contrastive_features = model(noise, n2n_output)
+                output, f1, = model(noise, n2n_output)
 
                 mse_loss = mse_criterion(output, clean)
                 psnr_loss = psnr_loss_func(output, clean)
                 
                 if epoch < bypass_epoch:
-                    level_contrastive_losses = []
+                #     level_contrastive_losses = []
                     
-                    for level_idx, (f1, f2) in enumerate(contrastive_features):
-                        level_loss = contrastive_loss_fn(f1, f2)
-                        level_contrastive_losses.append(level_loss)
+                #     for level_idx, (f1, f2) in enumerate(contrastive_features):
+                #         level_loss = contrastive_loss_fn(f1, f2)
+                #         level_contrastive_losses.append(level_loss)
                                             
-                    total_contrastive_loss = sum(level_contrastive_losses)
+                #     total_contrastive_loss = sum(level_contrastive_losses)
                     
                     loss = mse_loss + 0.1 * total_contrastive_loss + 0.1 * psnr_loss
                 else:
