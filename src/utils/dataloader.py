@@ -834,10 +834,8 @@ class SICEGradTest(BaseDataset):
         self.transform = transform
         self.augmentation = augmentation
         self.file_names = self.file_names[530:]
-
     def __len__(self):
         return len(self.file_names)
-    
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
@@ -865,12 +863,10 @@ class SICEGradTest(BaseDataset):
         #CHANGING COLORSPACE
         label_image = cv2.cvtColor(label_image, cv2.COLOR_BGR2RGB)
         input_image = cv2.cvtColor(input_image, cv2.COLOR_BGR2RGB)
-
         #ROTATING PORTRAIT IMAGES
         if label_image.shape[0] > label_image.shape[1]:
             label_image = cv2.rotate(label_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
             input_image = cv2.rotate(input_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
-
         #RESIZE + FLIP AUGMENTATION
         if self.augmentation:
             augmented = self.augmentation(image1=label_image, image=input_image)
@@ -899,7 +895,6 @@ class SICEMixTrain(BaseDataset):
         self.transform = transform
         self.augmentation = augmentation
         self.file_names = self.file_names[:480]
-
     def __len__(self):
         return len(self.file_names)
     
@@ -930,12 +925,10 @@ class SICEMixTrain(BaseDataset):
         #CHANGING COLORSPACE
         label_image = cv2.cvtColor(label_image, cv2.COLOR_BGR2RGB)
         input_image = cv2.cvtColor(input_image, cv2.COLOR_BGR2RGB)
-
         #ROTATING PORTRAIT IMAGES
         if label_image.shape[0] > label_image.shape[1]:
             label_image = cv2.rotate(label_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
             input_image = cv2.rotate(input_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
-
         #RESIZE + FLIP AUGMENTATION
         if self.augmentation:
             augmented = self.augmentation(image1=label_image, image=input_image)
@@ -1085,58 +1078,29 @@ class SICEMixTest(BaseDataset):
         
         return input_image, label_image
     
-# class LOLTrain(BaseDataset):
-#     def __init__(self, high_res_folder, low_res_folder, flag,  transform=None, augmentation=None):
-#         self.image_pairs = list_image_paths(high_res_folder, low_res_folder, flag)
-#         self.transform = transform
-#         self.augmentation = augmentation
-
-#     def __len__(self):
-#         return len(self.image_pairs)
-
-#     def __getitem__(self, idx):
-#         high_res_path, low_res_path = self.image_pairs[idx]
-
-#         high_res_image = cv2.imread(high_res_path)
-#         low_res_image = cv2.imread(low_res_path)
-
-#         # totensor = ToTensorV2()
-        
-#         if self.augmentation:
-#             augmented = self.augmentation(image=high_res_image, image1=low_res_image)
-#             high_res_image, low_res_image = augmented['image'], augmented['image1']
-
-#         low_res_image = low_res_image / 255.0
-#         high_res_image = high_res_image / 255.0
-
-#         low_res_image = torch.tensor(low_res_image, dtype=torch.float32).permute(2, 0, 1)
-#         high_res_image = torch.tensor(high_res_image, dtype=torch.float32).permute(2, 0, 1)
-            
-#         return low_res_image.float(),high_res_image.float()
+def get_sicetraining_augmentation():
+    train_transform = [
+        albu.Resize(608, 896, interpolation=cv2.INTER_LINEAR),
+        albu.VerticalFlip(p=0.5),
+    ]
+    return albu.Compose(train_transform, additional_targets={'image1':'image'}, is_check_shapes=False)
     
-# def get_training_augmentation():
-#     train_transform = [
-#         albu.Resize(608, 896, interpolation=cv2.INTER_LINEAR, always_apply=True),
-#         albu.VerticalFlip(p=0.5),
-#     ]
-#     return albu.Compose(train_transform, additional_targets={'image1':'image'}, is_check_shapes=False)
-    
-# def get_validation_augmentation():
-#     test_transform = [
-#         albu.Resize(608, 896, interpolation=cv2.INTER_LINEAR, always_apply=True),
-#     ]   
-#     return albu.Compose(test_transform, additional_targets={'image1': 'image'}, is_check_shapes=False)
+def get_sicevalidation_augmentation():
+    test_transform = [
+        albu.Resize(608, 896, interpolation=cv2.INTER_LINEAR),
+    ]   
+    return albu.Compose(test_transform, additional_targets={'image1': 'image'}, is_check_shapes=False)
 
-# def get_transform(dataset):
-#         if dataset == 'grad':   
-#             mean = [0.41441402, 0.41269127, 0.37940571]
-#             std = [0.33492465, 0.33443474, 0.33518072]
-#         if dataset == 'mix':
-#             mean = [0.41268688, 0.41124236, 0.37886961]
-#             std = [0.33789958, 0.33786919, 0.33946865]
-#         return albu.Compose([
-#             albu.Normalize(mean=mean, std=std),
-#     ])
+def get_transform_sice(dataset):
+        if dataset == 'grad':   
+            mean = [0.41441402, 0.41269127, 0.37940571]
+            std = [0.33492465, 0.33443474, 0.33518072]
+        if dataset == 'mix':
+            mean = [0.41268688, 0.41124236, 0.37886961]
+            std = [0.33789958, 0.33786919, 0.33946865]
+        return albu.Compose([
+            albu.Normalize(mean=mean, std=std),
+    ])
 class rain13k(Dataset):
     def __init__(self, root_dir, noise_level=25, crop_size=128, num_crops=32, normalize=True, tanfi=True, augmentation=None):
         self.root_dir = root_dir

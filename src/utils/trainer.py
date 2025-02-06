@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader
 from utils.misc import get_metrics, visualize_epoch, un_tan_fi
 from utils.model.coreswinet import Model
 # from utils.model.newmodel import Model
-from utils.dataloader import CBSD68Dataset, Waterloo,DIV2K,BSD400,SIDD,rain13k,get_training_augmentation
+from utils.dataloader import CBSD68Dataset, Waterloo,DIV2K,BSD400,SIDD,rain13k,get_sicetraining_augmentation, SICEGradTrain,SICEGradVal, get_transform_sice, get_sicevalidation_augmentation, get_training_augmentation
 from tqdm import tqdm
 import torch
 import torch.nn as nn
@@ -41,16 +41,22 @@ def train(
         train_dataset = SIDD(data_dir=train_dir, normalize=True, standardize=False, mode = 'train')
         val_dataset = SIDD(data_dir='/kaggle/input/sidd-val', normalize=True, standardize=False, mode = 'val')
     elif dataset_name=='rain13k':
-        dataset = rain13k(root_dir=train_dir, noise_level=noise_level, crop_size=128, num_crops=1, normalize=True,augmentation=get_training_augmentation())
-
+        dataset = rain13k(root_dir=train_dir, noise_level=noise_level, crop_size=128, num_crops=1, normalize=True,augmentation=get_training_augmentation())        
     if dataset_name!='SIDD':
-        train_size = int(0.8 * len(dataset))
-        val_size = len(dataset) - train_size
-        train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
+        if dataset_name!='grad':
+            train_size = int(0.8 * len(dataset))
+            val_size = len(dataset) - train_size
+            train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
+    if dataset_name == 'grad':
+        # transform = get_transform_sice('grad')
+        train_dataset = SICEGradTrain(root_dir=train_dir)
+        val_dataset = SICEGradVal(root_dir=train_dir)
+
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
     bypass_epoch = 20
+    
     
     print(f"Images per epoch Train: {len(train_loader) * train_loader.batch_size}")
     print(f"Images per epoch Val: {len(val_loader) * val_loader.batch_size}")
@@ -124,8 +130,7 @@ def train(
                 #     n2n_output = noise
 
                 
-                n2n_output = un_tan_fi(clean)# feeding ground truth  
-                                  
+                n2n_output = un_tan_fi(clean)# feeding ground truth 
                 optimizer.zero_grad()
                 
                 # Forward pass
