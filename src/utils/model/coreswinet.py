@@ -43,7 +43,7 @@ class Model(nn.Module):
         self.swin_blocks = nn.ModuleList([
             SwinTransformerBlock(
                 dim=ch,
-                input_resolution=(256 // (2 ** i), 256 // (2 ** i)),
+                input_resolution=(128 // (2 ** i), 128 // (2 ** i)),
                 num_heads=min(8, max(1, ch // 32)),
                 window_size=min(7, max(3, ch // 32)),
                 mlp_ratio=4.0
