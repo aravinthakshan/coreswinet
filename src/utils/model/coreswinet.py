@@ -119,7 +119,7 @@ class Model(nn.Module):
         if not self.bypass:
             features2 = list(self.encoder2(x_n2n))
         else:
-            features2 = features1  # Use same features when bypassing
+            features2 = features1  #
 
         # Process each encoder level and compute contrastive features
         processed_features = []
