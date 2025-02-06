@@ -3,11 +3,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 import segmentation_models_pytorch as smp
 from torchsummary import summary
-# from utils.model.archs.SwinBlocks import SwinTransformerBlock
-# from utils.model.archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
-# from utils.model.archs.ZSN2N import N2NNetwork
-from archs.SwinBlocks import SwinTransformerBlock
-from archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
+from utils.model.archs.SwinBlocks import SwinTransformerBlock
+from utils.model.archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
+from utils.model.archs.ZSN2N import N2NNetwork
+# from archs.SwinBlocks import SwinTransformerBlock
+# from archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
     
 # class Model(nn.Module):
 #     def __init__(self, in_channels=3, contrastive=True, bypass=False):
@@ -312,7 +312,7 @@ import torch
 import torch.nn as nn
 import segmentation_models_pytorch as smp
 
-class LightweightStudent(nn.Module):
+class Model(nn.Module):
     def __init__(self, in_channels=3, contrastive=True, bypass=False):
         super().__init__()
         self.bypass = bypass
@@ -437,34 +437,6 @@ def count_parameters(model):
     """Helper function to count model parameters"""
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
-if __name__ == "__main__":
-    # Test both normal and bypass modes
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
-    # Create models
-    model_normal = LightweightStudent(in_channels=3, contrastive=True, bypass=False).to(device)
-    model_bypass = LightweightStudent(in_channels=3, contrastive=True, bypass=True).to(device)
-    
-    # Print parameter counts
-    num_params = count_parameters(model_normal)
-    print(f"\nTotal trainable parameters: {num_params:,}")
-    
-    # Test forward pass
-    batch_size = 2
-    x_noisy = torch.randn(batch_size, 3, 256, 256).to(device)
-    x_n2n = torch.randn(batch_size, 3, 256, 256).to(device)
-    
-    # Test normal mode
-    output_normal, f1_normal, f2_normal = model_normal(x_noisy, x_n2n)
-    print(f"\nNormal mode:")
-    print(f"Output shape: {output_normal.shape}")
-    print(f"Contrastive feature shapes: {f1_normal.shape}, {f2_normal.shape}")
-    
-    # Test bypass mode
-    output_bypass, f1_bypass, f2_bypass = model_bypass(x_noisy, x_n2n)
-    print(f"\nBypass mode:")
-    print(f"Output shape: {output_bypass.shape}")
-    print(f"Contrastive feature shapes: {f1_bypass.shape}, {f2_bypass.shape}")
 
 # ----------> BELOW IS OUR IMPORTANT MODEL <-----------
     
