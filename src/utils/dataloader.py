@@ -1137,7 +1137,7 @@ def get_transform(dataset):
         return albu.Compose([
             albu.Normalize(mean=mean, std=std),
     ])
-class Waterloo(Dataset):
+class rain13k(Dataset):
     def __init__(self, root_dir, noise_level=25, crop_size=256, num_crops=32, normalize=True, tanfi=True, augmentation=None):
         self.root_dir = root_dir
         self.noise_level = f"noisy_{noise_level}"
