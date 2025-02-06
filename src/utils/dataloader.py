@@ -1078,20 +1078,20 @@ class SICEMixTest(BaseDataset):
         
         return input_image, label_image
     
-def get_training_augmentation():
+def get_sicetraining_augmentation():
     train_transform = [
         albu.Resize(608, 896, interpolation=cv2.INTER_LINEAR, always_apply=True),
         albu.VerticalFlip(p=0.5),
     ]
     return albu.Compose(train_transform, additional_targets={'image1':'image'}, is_check_shapes=False)
     
-def get_validation_augmentation():
+def get_sicevalidation_augmentation():
     test_transform = [
         albu.Resize(608, 896, interpolation=cv2.INTER_LINEAR, always_apply=True),
     ]   
     return albu.Compose(test_transform, additional_targets={'image1': 'image'}, is_check_shapes=False)
 
-def get_transform(dataset):
+def get_transform_sice(dataset):
         if dataset == 'grad':   
             mean = [0.41441402, 0.41269127, 0.37940571]
             std = [0.33492465, 0.33443474, 0.33518072]
