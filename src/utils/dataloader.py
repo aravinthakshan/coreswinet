@@ -1080,14 +1080,14 @@ class SICEMixTest(BaseDataset):
     
 def get_sicetraining_augmentation():
     train_transform = [
-        albu.Resize(608, 896, interpolation=cv2.INTER_LINEAR, always_apply=True),
+        albu.Resize(608, 896, interpolation=cv2.INTER_LINEAR),
         albu.VerticalFlip(p=0.5),
     ]
     return albu.Compose(train_transform, additional_targets={'image1':'image'}, is_check_shapes=False)
     
 def get_sicevalidation_augmentation():
     test_transform = [
-        albu.Resize(608, 896, interpolation=cv2.INTER_LINEAR, always_apply=True),
+        albu.Resize(608, 896, interpolation=cv2.INTER_LINEAR),
     ]   
     return albu.Compose(test_transform, additional_targets={'image1': 'image'}, is_check_shapes=False)
 
