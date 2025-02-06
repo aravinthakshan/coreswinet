@@ -48,8 +48,8 @@ def train(
             val_size = len(dataset) - train_size
             train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
     if dataset_name == 'grad':
-        transform = get_transform_sice('grad')
-        train_dataset = SICEGradTrain(root_dir=train_dir, transform= transform, augmentation=get_sicetraining_augmentation)
+        # transform = get_transform_sice('grad')
+        train_dataset = SICEGradTrain(root_dir=train_dir, augmentation=get_sicetraining_augmentation)
         val_dataset = SICEGradVal(root_dir=train_dir, augmentation=get_sicevalidation_augmentation())
 
 
@@ -130,8 +130,7 @@ def train(
                 #     n2n_output = noise
 
                 
-                n2n_output = un_tan_fi(clean)# feeding ground truth  
-                                  
+                n2n_output = un_tan_fi(clean)# feeding ground truth 
                 optimizer.zero_grad()
                 
                 # Forward pass
