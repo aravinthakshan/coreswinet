@@ -49,8 +49,8 @@ def train(
             train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
     if dataset_name == 'grad':
         # transform = get_transform_sice('grad')
-        train_dataset = SICEGradTrain(root_dir=train_dir, augmentation=get_sicetraining_augmentation)
-        val_dataset = SICEGradVal(root_dir=train_dir, augmentation=get_sicevalidation_augmentation())
+        train_dataset = SICEGradTrain(root_dir=train_dir)
+        val_dataset = SICEGradVal(root_dir=train_dir)
 
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
