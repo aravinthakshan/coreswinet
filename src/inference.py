@@ -90,7 +90,7 @@ def test(
             
             with torch.no_grad():
                 output_n2n = un_tan_fi(clean)
-                output_main, _ = main_model(noise, output_n2n)
+                output_main, _, _ = main_model(noise, output_n2n)
             
             # Calculate metrics for main model
             psnr_main, ssim_main = get_metrics(clean, output_main, psnr_metric, ssim_metric)
