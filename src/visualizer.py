@@ -5,7 +5,7 @@ import wandb
 import torchmetrics.image
 from utils.dataloader import CBSD68Dataset 
 from torch.utils.data import DataLoader
-from utils.model.coreswinet import Model, replace_decoder_convs
+from utils.model.coreswinet import Model
 from utils.model.archs.ZSN2N import N2NNetwork
 
 def load_models(main_model_path, device):
@@ -14,7 +14,6 @@ def load_models(main_model_path, device):
     # Load main model checkpoint
     main_checkpoint = torch.load(main_model_path, map_location=device)
     main_model = Model()  # Initialize main model
-    main_model = replace_decoder_convs(main_model)
     main_model.load_state_dict(main_checkpoint['model_state_dict'])
     print(f"Loaded main model state dict from {main_model_path}.")
     
