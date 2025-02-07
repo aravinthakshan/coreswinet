@@ -6,7 +6,7 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import os
 import numpy as np
-from utils.dataloader import CBSD68Dataset,McMasterDataset,kodak
+from utils.dataloader import CBSD68Dataset,McMasterDataset,kodak, SICEGradTest, get_sicevalidation_augmentation
 from torch.utils.data import DataLoader, Subset
 import torchmetrics
 from tqdm import tqdm
@@ -41,7 +41,7 @@ def test(
         })
     
     main_model = load_models(
-        './main_model/best_model.pth',
+        '/kaggle/input/siceweight/pytorch/default/1',
         device
     )
 
@@ -59,6 +59,7 @@ def test(
             normalize=True,
             tanfi=True 
         )
+
     elif test_dataset=='mcmaster':
         dataset = McMasterDataset(
             root_dir='/kaggle/input/mcmaster-proper/McMaster', 
@@ -68,6 +69,7 @@ def test(
             normalize=True,
             tanfi=True 
         )
+
     elif test_dataset=='kodak':
         dataset = kodak(
             root_dir='/kaggle/input/kodak-test/kodak_test', 
@@ -76,6 +78,12 @@ def test(
             num_crops=34,
             normalize=True,
             tanfi=True 
+        )
+
+    elif test_dataset=='grad':
+        dataset = SICEGradTest(
+            root_dir='/kaggle/input/sice-grad-and-sice-mix/SICEGM',
+            augmentation=get_sicevalidation_augmentation()
         )
 
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)

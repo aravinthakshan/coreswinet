@@ -28,8 +28,9 @@ def main(args):
             }
         )
     
-    train_model(config)
     test_model(config)
+    train_model(config)
+    
     
     
     
