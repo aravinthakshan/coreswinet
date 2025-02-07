@@ -57,12 +57,12 @@ def train(
     if dataset_name == 'sice':
         train_dataset= SICETrainDataset(root_dir=train_dir,
                                         num_crops=2,
-                                        augmentation=get_training_augmentation,
+                                        augmentation=get_training_augmentation(),
                                         mode='train'
                                         )
         val_dataset= SICETrainDataset(root_dir=train_dir,
                                         num_crops=1,
-                                        augmentation=get_training_augmentation,
+                                        augmentation=get_training_augmentation(),
                                         mode='val'
                                         )
 
