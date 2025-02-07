@@ -1194,6 +1194,7 @@ class uiebd_dataset(Dataset):
         self.num_crops = num_crops
         self.normalize = normalize
         self.tanfi = tanfi
+        self.augmentation=augmentation
 
         self.original_dir = os.path.join('/kaggle/input/uiebddataset/reference-890/reference-890','reference-890')
         self.noisy_dir = os.path.join('/kaggle/input/uiebddataset/raw-890/raw-890', "raw-890")
