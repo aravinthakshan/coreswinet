@@ -46,7 +46,7 @@ def train(
         dataset = rain13k(root_dir=train_dir, noise_level=noise_level, crop_size=128, num_crops=1, normalize=True,augmentation=get_training_augmentation())        
     if dataset_name!='SIDD':
         if dataset_name!='grad':
-            train_size = int(0.8 * len(dataset))
+            train_size = int(0.9 * len(dataset))
             val_size = len(dataset) - train_size
             train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
     if dataset_name == 'grad':
