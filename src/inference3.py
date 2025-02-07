@@ -170,5 +170,5 @@ if __name__ == "__main__":
     model.bypass = True
     
     # Run evaluation
-    root_dir = "/kaggle/input/rain13k"
+    root_dir = "/kaggle/input/rain13k/test/test"
     results = run_full_evaluation(model, root_dir, device=device)
