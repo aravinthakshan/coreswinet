@@ -177,7 +177,7 @@ def train(
                     noise, clean = [x.to(device) for x in batch_data]        
 
                     n2n_output = un_tan_fi(clean) ##note
-                    output, _ = model(noise, n2n_output)
+                    output, _ , _= model(noise, n2n_output)
                     psnr_val_itr, ssim_val_itr = get_metrics(clean, output, psnr_metric, ssim_metric)
                     psnr_val += psnr_val_itr
                     ssim_val += ssim_val_itr
