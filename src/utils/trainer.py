@@ -55,7 +55,6 @@ def train(
 
     # Initialize main model with bypass parameter
     model = Model(contrastive=True, bypass=False).to(device)
-    model = replace_decoder_convs(model)
     model.to(device)
     # Optimizer
     optimizer = SOAP(

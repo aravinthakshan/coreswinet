@@ -2,13 +2,18 @@ import os
 import random
 import torch
 import torch.nn as nn
-from torch.utils.data import Dataset
 from PIL import Image
 import torchvision.transforms.functional as TF
 import matplotlib.pyplot as plt
 import numpy as np
 import albumentations as albu
 import matplotlib.pyplot as plt
+from torch.utils.data import Dataset, DataLoader, random_split
+import torchvision.transforms as transforms
+import torchvision.transforms.functional as TF
+import matplotlib.pyplot as plt
+import cv2
+import scipy.io
 
 
 def tan_fi(data):
@@ -24,8 +29,6 @@ def tan_fi(data):
     d -= 1
     
     return d
-
-
 
 class CBSD68Dataset(Dataset):
     def __init__(self, root_dir, noise_level=25, crop_size=256, num_crops=32, normalize=True, tanfi=True):
@@ -334,18 +337,6 @@ class DIV2K(Dataset):
             clean_crop = tan_fi(clean_crop)
 
         return noisy_crop, clean_crop
-import os
-import random
-import torch
-import torch.nn as nn
-from torch.utils.data import Dataset, DataLoader, random_split
-from PIL import Image
-import torchvision.transforms as transforms
-import torchvision.transforms.functional as TF
-import matplotlib.pyplot as plt
-import cv2
-import numpy as np
-import scipy.io
 
 
 class SIDD(Dataset):
@@ -564,36 +555,3 @@ class McMasterDataset(Dataset):
         axes[1].axis("off")
 
         plt.show()
-# # Usage example
-# if __name__ == "__main__":
-#     # Paths to your data
-#     train_data_dir = "/path/to/train/data"
-#     val_data_dir = "/path/to/val/data"
-#     test_data_dir = "/path/to/test/data"
-    
-
-    
-#     # Create datasets
-#     train_dataset = SIDD(train_data_dir, mode="train")
-#     val_dataset = SIDD(val_data_dir, mode="val")
-#     test_dataset = SIDD(test_data_dir, mode="test", crop_coordinates=crop_coords_list)
-    
-#     # Create dataloaders
-#     train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
-#     val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
-#     test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
-    
-#     # Visualize individual samples from train dataset
-#     visualize_sidd(train_dataset, num_samples=4)
-    
-#     # Visualize a batch from train dataloader
-#     visualize_sidd(train_loader, batch=True)
-    
-#     # Visualize specific samples from val dataset
-#     visualize_sidd(val_dataset, indices=[0, 10, 20, 30])
-    
-#     # Visualize a batch from val dataloader
-#     visualize_sidd(val_loader, batch=True)
-    
-#     # Visualize a batch from test dataloader
-#     visualize_sidd(test_loader, batch=True)

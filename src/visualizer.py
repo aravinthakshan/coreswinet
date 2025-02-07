@@ -17,13 +17,7 @@ def load_models(main_model_path, device):
     main_model.load_state_dict(main_checkpoint['model_state_dict'])
     print(f"Loaded main model state dict from {main_model_path}.")
     
-    # Load n2n model checkpoint
-    # n2n_checkpoint = torch.load(n2n_model_path, map_location=device)
-    # n2n_model = N2NNetwork()  # Initialize n2n model
-    # n2n_model.load_state_dict(n2n_checkpoint['model_state_dict'])
-    # print(f"Loaded n2n model state dict from {n2n_model_path}.")
-    
-    max_ssim = main_checkpoint['max_ssim']  # Or use n2n_checkpoint, if you prefer
+    max_ssim = main_checkpoint['max_ssim']  
     max_psnr = main_checkpoint['max_psnr']
     epoch = main_checkpoint['epoch']
     
@@ -134,22 +128,16 @@ def main_vis(test_dir, use_wandb=True, noise_level=25, crop_size=256, num_crops=
         noise, clean = noise.to(device), clean.to(device)
         
         with torch.no_grad():
-        #    output_n2n = n2n_model.denoise(noise)
             output_n2n = un_tan_fi(clean)
             output_main, _ = main_model(noise, output_n2n)
         
-        # Get metrics for both models
         psnr_main, ssim_main = get_metrics(clean, output_main, psnr_metric, ssim_metric)
-        # psnr_n2n, ssim_n2n = get_metrics(clean, output_n2n, psnr_metric, ssim_metric,n2n=True)
         
         print(f"\nImage {i}:")
         print(f"Main Model - PSNR: {psnr_main:.4f}, SSIM: {ssim_main:.4f}")
-        # print(f"N2N Model  - PSNR: {psnr_n2n:.4f}, SSIM: {ssim_n2n:.4f}")
         
         # Get statistics for both models with different suffixes
-        stats_main = get_statistics(noise[0], clean[0], output_main[0], i, suffix='_main', wb=use_wandb)
-        # stats_n2n = get_statistics(noise[0], clean[0], output_n2n[0], i, suffix='_n2n', wb=use_wandb,n2n=True)
-        
+        stats_main = get_statistics(noise[0], clean[0], output_main[0], i, suffix='_main', wb=use_wandb)        
 
         all_stats.append({
             "main_model": stats_main,
