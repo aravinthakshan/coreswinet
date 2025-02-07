@@ -1185,6 +1185,7 @@ class rain13k(Dataset):
 
         plt.show()
 
+# ----> RESIZE IMAGE TO 256 256 ( 800*800 OG )
 
 class uiebd_dataset(Dataset):
     def __init__(self, root_dir, noise_level=25, crop_size=256, num_crops=32, normalize=True, tanfi=True,augmentation=None):
