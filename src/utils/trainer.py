@@ -124,7 +124,7 @@ def train(
             model.bypass = True
             print(f"\nEpoch {epoch + 1}: Enabling encoder bypass and disabling contrastive loss")
         else:
-            model.bypass = False
+            model.bypass = True
 
         model.train()
         total_loss = []
@@ -156,7 +156,7 @@ def train(
                 # Only apply contrastive loss before bypass_epoch
                 if epoch < bypass_epoch:
                     contrastive_loss = contrastive_loss_fn(f1, f2)
-                    loss = mse_loss + 0.01 * contrastive_loss + 0.1 * psnr_loss  ##----------->NOTE: HAS BEEN CHANGED
+                    loss = mse_loss + 0.01 * contrastive_loss + 0.1 * psnr_loss  
                 else:
                     loss = 1000 * mse_loss + 0.1 * psnr_loss
                 
@@ -204,10 +204,7 @@ def train(
                 for batch_data in loader:
                     noise, clean = [x.to(device) for x in batch_data]        
 
-                    # if use_n2n:
-                    #     n2n_output = n2n_model.denoise(noise)
-                    # else:
-                    #     n2n_output = noise
+
                     n2n_output = un_tan_fi(clean) ##note
                     output, _, _ = model(noise, n2n_output)
                     psnr_val_itr, ssim_val_itr = get_metrics(clean, output, psnr_metric, ssim_metric)
@@ -251,14 +248,8 @@ def train(
                 }, './main_model/pretrained.pth')
 
             if wandb_debug:
-                # visualize_epoch(model, n2n_model, val_loader, device, epoch, wandb_debug)
                 wandb.log(logger)
         
-        # # Check if max_psnr exceeds threshold
-        # if max_psnr > psnr_threshold:
-        #     print(f"PSNR threshold exceeded at epoch {epoch + 1}. Disabling N2N model.")
-
-    
 # After the main training loop ends
     print("\nTraining completed. Saving final models...")
     
