@@ -27,7 +27,7 @@ def main(args):
                 "Learning Rate": args.lr
             }
         )
-        
+    
     train_model(config)
     test_model(config)
     
