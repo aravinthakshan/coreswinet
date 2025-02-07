@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader
 from utils.misc import get_metrics, visualize_epoch, un_tan_fi
 from utils.model.coreswinet import Model
 # from utils.model.newmodel import Model
-from utils.dataloader import CBSD68Dataset, Waterloo,DIV2K,BSD400,SIDD,rain13k,uiebd_dataset,get_sicetraining_augmentation, SICEGradTrain,SICEGradVal, get_transform_sice, get_sicevalidation_augmentation, get_training_augmentation
+from utils.dataloader import CBSD68Dataset, Waterloo,DIV2K,BSD400,SIDD,rain13k,uiebd_dataset,get_sicetraining_augmentation, SICEGradTrain,SICEGradVal, get_transform_sice, get_sicevalidation_augmentation, get_training_augmentation, SICETrainDataset
 from tqdm import tqdm
 import torch
 import torch.nn as nn
@@ -44,15 +44,27 @@ def train(
         train_dataset= uiebd_dataset(root_dir=train_dir, noise_level=noise_level, crop_size=256, num_crops=2, normalize=True,augmentation=get_training_augmentation)
     elif dataset_name=='rain13k':
         dataset = rain13k(root_dir=train_dir, noise_level=noise_level, crop_size=128, num_crops=1, normalize=True,augmentation=get_training_augmentation())        
-    if dataset_name!='SIDD':
-        if dataset_name!='grad':
-            train_size = int(0.8 * len(dataset))
-            val_size = len(dataset) - train_size
-            train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
+    if dataset_name not in['SIDD','grad','sice']:
+        train_size = int(0.8 * len(dataset))
+        val_size = len(dataset) - train_size
+        train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
+
     if dataset_name == 'grad':
         # transform = get_transform_sice('grad')
         train_dataset = SICEGradTrain(root_dir=train_dir, augmentation=get_sicetraining_augmentation())
         val_dataset = SICEGradVal(root_dir=train_dir, augmentation=get_sicevalidation_augmentation())
+    
+    if dataset_name == 'sice':
+        train_dataset= SICETrainDataset(root_dir=train_dir,
+                                        num_crops=2,
+                                        augmentation=get_training_augmentation,
+                                        mode='train'
+                                        )
+        val_dataset= SICETrainDataset(root_dir=train_dir,
+                                        num_crops=1,
+                                        augmentation=get_training_augmentation,
+                                        mode='val'
+                                        )
 
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
