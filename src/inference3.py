@@ -253,6 +253,5 @@ if __name__ == "__main__":
     model.to(device).eval()
     model.bypass = True
     
-    # Your path already includes "/test/test", so we'll use it directly
-    root_dir = "/kaggle/input/rain13k/test/test"
+    root_dir = "/kaggle/input/rain13k/test/"
     results = run_full_evaluation(model, root_dir, device=device)
