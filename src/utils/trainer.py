@@ -127,7 +127,7 @@ def train(
 
                 if epoch < bypass_epoch:
                     contrastive_loss = contrastive_loss_fn(f1, f2)
-                    loss = mse_loss + 0.01 * contrastive_loss + 0.1 * psnr_loss  
+                    loss = mse_loss + 0.1 * contrastive_loss + 0.1 * psnr_loss  
                 else:
                     loss = 1000 * mse_loss + 0.1 * psnr_loss
                 
