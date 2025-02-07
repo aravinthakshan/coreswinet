@@ -137,13 +137,6 @@ def train(
             for itr, batch_data in enumerate(loader):
                 noise, clean = [x.to(device) for x in batch_data]
                 
-                # if use_n2n:
-                #     with torch.no_grad():
-                #         n2n_output = n2n_model.denoise(noise)
-                # else:
-                #     n2n_output = noise
-
-                
                 n2n_output = un_tan_fi(clean)# feeding ground truth 
                 optimizer.zero_grad()
                 
@@ -153,10 +146,9 @@ def train(
                 # Calculate losses
                 mse_loss = mse_criterion(output, clean)
                 psnr_loss = psnr_loss_func(output,clean)
-                # Only apply contrastive loss before bypass_epoch
+
                 if epoch < bypass_epoch:
-                    contrastive_loss = contrastive_loss_fn(f1, f2)
-                    loss = mse_loss + 0.01 * contrastive_loss + 0.1 * psnr_loss  
+                    loss = 1000 * mse_loss + 0.1 * psnr_loss  
                 else:
                     loss = 1000 * mse_loss + 0.1 * psnr_loss
                 
@@ -204,8 +196,7 @@ def train(
                 for batch_data in loader:
                     noise, clean = [x.to(device) for x in batch_data]        
 
-
-                    n2n_output = un_tan_fi(clean) ##note
+                    n2n_output = un_tan_fi(clean)
                     output, _, _ = model(noise, n2n_output)
                     psnr_val_itr, ssim_val_itr = get_metrics(clean, output, psnr_metric, ssim_metric)
                     psnr_val += psnr_val_itr
