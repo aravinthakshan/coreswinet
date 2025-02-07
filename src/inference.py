@@ -41,7 +41,7 @@ def test(
         })
     
     main_model = load_models(
-        './main_model/best_model.pth',
+        '/kaggle/input/siceweight/pytorch/default/1',
         device
     )
 
