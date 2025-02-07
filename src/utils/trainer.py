@@ -122,19 +122,19 @@ def train(
 
                 mse_loss = mse_criterion(output, clean)
                 psnr_loss = psnr_loss_func(output, clean)
-                
+
+                                # Forward pass
+                output, f1, f2 = model(noise, n2n_output)
+            
+                # Calculate losses
+                mse_loss = mse_criterion(output, clean)
+                psnr_loss = psnr_loss_func(output,clean)
+                # Only apply contrastive loss before bypass_epoch
                 if epoch < bypass_epoch:
-                #     level_contrastive_losses = []
-                    
-                #     for level_idx, (f1, f2) in enumerate(contrastive_features):
-                #         level_loss = contrastive_loss_fn(f1, f2)
-                #         level_contrastive_losses.append(level_loss)
-                                            
-                #     total_contrastive_loss = sum(level_contrastive_losses)
-                    
-                    loss = mse_loss + 0.1 * total_contrastive_loss + 0.1 * psnr_loss
+                    contrastive_loss = contrastive_loss_fn(f1, f2)
+                    loss = mse_loss + 0.01 * contrastive_loss + 0.1 * psnr_loss  ##----------->NOTE: HAS BEEN CHANGED
                 else:
-                    loss = 1000*  mse_loss + 0.1 * psnr_loss
+                    loss = 1000 * mse_loss + 0.1 * psnr_loss
 
                 loss.backward()
                 optimizer.step()
