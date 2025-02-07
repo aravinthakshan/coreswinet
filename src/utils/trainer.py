@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader
 from utils.misc import get_metrics, visualize_epoch, un_tan_fi
 from utils.model.coreswinet import Model
 # from utils.model.newmodel import Model
-from utils.dataloader import CBSD68Dataset, Waterloo,DIV2K,BSD400,SIDD,rain13k,get_sicetraining_augmentation, SICEGradTrain,SICEGradVal, get_transform_sice, get_sicevalidation_augmentation, get_training_augmentation
+from utils.dataloader import CBSD68Dataset, Waterloo,DIV2K,BSD400,SIDD,rain13k,uiebd_dataset,get_sicetraining_augmentation, SICEGradTrain,SICEGradVal, get_transform_sice, get_sicevalidation_augmentation, get_training_augmentation
 from tqdm import tqdm
 import torch
 import torch.nn as nn
@@ -40,6 +40,8 @@ def train(
     elif dataset_name=='SIDD':
         train_dataset = SIDD(data_dir=train_dir, normalize=True, standardize=False, mode = 'train')
         val_dataset = SIDD(data_dir='/kaggle/input/sidd-val', normalize=True, standardize=False, mode = 'val')
+    elif dataset_name=='uiebd':
+        train_dataset= uiebd_dataset(root_dir=train_dir, noise_level=noise_level, crop_size=256, num_crops=2, normalize=True,augmentation=get_training_augmentation)
     elif dataset_name=='rain13k':
         dataset = rain13k(root_dir=train_dir, noise_level=noise_level, crop_size=128, num_crops=1, normalize=True,augmentation=get_training_augmentation())        
     if dataset_name!='SIDD':
