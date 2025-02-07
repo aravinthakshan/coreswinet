@@ -1264,3 +1264,123 @@ class uiebd_dataset(Dataset):
         axes[1].axis("off")
 
         plt.show()
+
+class SICETrainDataset(BaseDataset):
+    def __init__(self, root_dir, crop_size=256, num_crops=1, transform=None, augmentation=None, 
+                 val_indices=None, test_indices=None, mode="train", normalize=True, tanfi=True):
+        self.root_dir = root_dir
+        self.transform = transform
+        self.augmentation = augmentation
+        self.crop_size = crop_size
+        self.num_crops = num_crops
+        self.normalize = normalize
+        self.tanfi = tanfi
+        self.data = []
+        
+        # Fixed indices for validation and testing
+        self.val_indices = set([24, 25, 26, 27, 35, 36, 40, 41, 42, 43, 44, 45, 70, 71, 72, 73, 74, 80, 81, 82, 83])
+        self.test_indices = set([4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 28, 31, 33, 34, 37, 38, 39, 46, 47, 48, 49, 50, 51, 52, 55, 69, 75, 76, 77, 78, 79, 100, 101, 102, 103])
+        self.mode = mode
+
+        # Load data paths
+        for part in ["Dataset_Part1/Dataset_Part1", "Dataset_Part2/Dataset_Part2"]:
+            part_path = os.path.join(root_dir, part)
+            label_path = os.path.join(part_path, "Label")
+            
+            for folder in os.listdir(part_path):
+                folder_path = os.path.join(part_path, folder)
+                
+                if folder.isdigit() and os.path.isdir(folder_path):
+                    label_file = None
+                    for ext in [".PNG", ".JPG", ".JPEG"]:
+                        potential_label = os.path.join(label_path, f"{folder}{ext}")
+                        if os.path.exists(potential_label):
+                            label_file = potential_label
+                            break
+                    
+                    if not label_file:
+                        continue
+                    
+                    folder_number = int(folder)
+                    for img_file in os.listdir(folder_path):
+                        if img_file.endswith(('.PNG', '.JPG', '.JPEG')):
+                            img_path = os.path.join(folder_path, img_file)
+                            if part == "Dataset_Part1/Dataset_Part1":
+                                self.data.append((folder_number, img_path, label_file))
+                            else:
+                                self.data.append((None, img_path, label_file))
+
+        # Filter data based on mode
+        if mode == "train":
+            self.data = [x[1:] for x in self.data if x[0] is None or (x[0] not in self.val_indices and x[0] not in self.test_indices)]
+        elif mode == "val":
+            self.data = [x[1:] for x in self.data if x[0] in self.val_indices]
+        elif mode == "test":
+            self.data = [x[1:] for x in self.data if x[0] in self.test_indices]
+
+    def __len__(self):
+        return len(self.data) * self.num_crops if self.mode == "train" else len(self.data)
+
+    def random_crop(self, input_image, label_image):
+        h, w = input_image.shape[:2]
+        
+        # Ensure crop size isn't larger than image
+        crop_size = min(self.crop_size, h, w)
+        
+        # Random crop coordinates
+        top = random.randint(0, h - crop_size)
+        left = random.randint(0, w - crop_size)
+        
+        input_crop = input_image[top:top + crop_size, left:left + crop_size]
+        label_crop = label_image[top:top + crop_size, left:left + crop_size]
+        
+        return input_crop, label_crop
+
+    def tan_fi(self, data):
+        """Transform data to [-1, 1] range"""
+        return data * 2 - 1
+
+    def __getitem__(self, idx):
+        # Adjust index for multiple crops
+        if self.mode == "train":
+            base_idx = idx // self.num_crops
+            img_path, label_path = self.data[base_idx]
+        else:
+            img_path, label_path = self.data[idx]
+
+        # Load images
+        label_image = cv2.imread(label_path)
+        input_image = cv2.imread(img_path)
+        
+        # Convert colorspace
+        label_image = cv2.cvtColor(label_image, cv2.COLOR_BGR2RGB)
+        input_image = cv2.cvtColor(input_image, cv2.COLOR_BGR2RGB)
+        
+        # Rotate portrait images
+        if label_image.shape[0] > label_image.shape[1]:
+            label_image = cv2.rotate(label_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+            input_image = cv2.rotate(input_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+        
+        # Apply random crop
+        if self.mode == "train":
+            input_image, label_image = self.random_crop(input_image, label_image)
+        
+        # Apply augmentations
+        if self.augmentation:
+            augmented = self.augmentation(image1=label_image, image=input_image)
+            label_image, input_image = augmented['image1'], augmented['image']
+        
+        # Normalize
+        if self.normalize:
+            input_image = input_image / 255.0
+            label_image = label_image / 255.0
+        
+        # Convert to tensor and change dimensions
+        input_image = torch.tensor(input_image, dtype=torch.float32).permute(2, 0, 1)
+        label_image = torch.tensor(label_image, dtype=torch.float32).permute(2, 0, 1)
+        
+        # Apply tanification if requested
+        if self.tanfi:
+            label_image = self.tan_fi(label_image)
+        
+        return input_image, label_image
