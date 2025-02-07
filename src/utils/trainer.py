@@ -41,7 +41,7 @@ def train(
         train_dataset = SIDD(data_dir=train_dir, normalize=True, standardize=False, mode = 'train')
         val_dataset = SIDD(data_dir='/kaggle/input/sidd-val', normalize=True, standardize=False, mode = 'val')
     elif dataset_name=='uiebd':
-        train_dataset= uiebd_dataset(root_dir=train_dir, noise_level=noise_level, crop_size=256, num_crops=2, normalize=True,augmentation=get_training_augmentation())
+        train_dataset= uiebd_dataset(root_dir=train_dir, noise_level=noise_level, crop_size=128, num_crops=2, normalize=True,augmentation=get_training_augmentation())
     elif dataset_name=='rain13k':
         dataset = rain13k(root_dir=train_dir, noise_level=noise_level, crop_size=128, num_crops=1, normalize=True,augmentation=get_training_augmentation())        
     if dataset_name!='SIDD':
