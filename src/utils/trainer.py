@@ -114,29 +114,26 @@ def train(
             for itr, batch_data in enumerate(loader):
                 noise, clean = [x.to(device) for x in batch_data]
                 
-                n2n_output = un_tan_fi(clean)# feeding ground truth  
-                                  
+                
+                n2n_output = un_tan_fi(clean)# feeding ground truth 
                 optimizer.zero_grad()
-                output, f1, = model(noise, n2n_output)
-
-                mse_loss = mse_criterion(output, clean)
-                psnr_loss = psnr_loss_func(output, clean)
-
-                                # Forward pass
+                
+                # Forward pass
                 output, f1, f2 = model(noise, n2n_output)
-            
-                # Calculate losses
+                
+
                 mse_loss = mse_criterion(output, clean)
                 psnr_loss = psnr_loss_func(output,clean)
-                # Only apply contrastive loss before bypass_epoch
+
                 if epoch < bypass_epoch:
                     contrastive_loss = contrastive_loss_fn(f1, f2)
-                    loss = mse_loss + 0.01 * contrastive_loss + 0.1 * psnr_loss  ##----------->NOTE: HAS BEEN CHANGED
+                    loss = mse_loss + 0.01 * contrastive_loss + 0.1 * psnr_loss  
                 else:
                     loss = 1000 * mse_loss + 0.1 * psnr_loss
-
+                
                 loss.backward()
                 optimizer.step()
+                
                 
                 # Calculate metrics
                 psnr_train_itr, ssim_train_itr = get_metrics(clean, output, psnr_metric, ssim_metric)
