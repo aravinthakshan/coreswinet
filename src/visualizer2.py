@@ -58,7 +58,7 @@ def main_vis(test_dir, noise_level=25, crop_size=128, num_crops=32):
     psnr_metric = torchmetrics.image.PeakSignalNoiseRatio().to(device)
     ssim_metric = torchmetrics.image.StructuralSimilarityIndexMeasure().to(device)
 
-    output_dir = "output_images"
+    output_dir = "/kaggle/working"
     os.makedirs(output_dir, exist_ok=True)
 
     selected_indices = [10, 20]
