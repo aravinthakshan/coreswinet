@@ -3,7 +3,7 @@ from torch.utils.data import DataLoader
 from utils.misc import get_metrics, visualize_epoch, un_tan_fi
 from utils.model.coreswinet import Model
 # from utils.model.newmodel import Model
-from utils.dataloader import CBSD68Dataset, Waterloo,DIV2K,BSD400,SIDD,rain13k,uiebd_dataset,get_sicetraining_augmentation, SICEGradTrain,SICEGradVal, get_transform_sice, get_sicevalidation_augmentation, get_training_augmentation
+from utils.dataloader import CBSD68Dataset, Waterloo,DIV2K,BSD400,SIDD,rain13k,uiebd_dataset,lsui_dataset,get_sicetraining_augmentation, SICEGradTrain,SICEGradVal, get_transform_sice, get_sicevalidation_augmentation, get_training_augmentation
 from tqdm import tqdm
 import torch
 import torch.nn as nn
@@ -44,9 +44,12 @@ def train(
         dataset= uiebd_dataset(root_dir=train_dir, noise_level=noise_level, normalize=True,augmentation=get_training_augmentation())
     elif dataset_name=='rain13k':
         dataset = rain13k(root_dir=train_dir, noise_level=noise_level, crop_size=128, num_crops=1, normalize=True,augmentation=get_training_augmentation())        
+    elif dataset_name=='lsui':
+        dataset= lsui_dataset(root_dir=train_dir, noise_level=noise_level, normalize=True,augmentation=get_training_augmentation())
+
     if dataset_name!='SIDD':
         if dataset_name!='grad':
-            train_size = int(0.9 * len(dataset))
+            train_size = int(0.906520215 * len(dataset))
             val_size = len(dataset) - train_size
             train_dataset, val_dataset = torch.utils.data.random_split(dataset, [train_size, val_size])
     if dataset_name == 'grad':

@@ -1252,3 +1252,68 @@ class uiebd_dataset(Dataset):
         axes[1].axis("off")
 
         plt.show()
+class lsui_dataset(Dataset):
+    def __init__(self, root_dir, noise_level=25, normalize=True, tanfi=True, augmentation=None):
+        self.root_dir = root_dir
+        self.noise_level = f"noisy_{noise_level}"
+        self.normalize = normalize
+        self.tanfi = tanfi
+        self.augmentation = augmentation
+
+        self.original_dir = os.path.join('/kaggle/input/lsui-underwater/LSUI', 'GT')
+        self.noisy_dir = os.path.join('/kaggle/input/lsui-underwater/LSUI', "input")
+
+        self.image_paths = [fname for fname in os.listdir(self.original_dir) if fname.endswith('.jpg')]
+
+        self.image_pairs = []
+        for img_name in self.image_paths:
+            clean_path = os.path.join(self.original_dir, img_name)
+            noisy_path = os.path.join(self.noisy_dir, img_name)
+
+            # Open and resize images to 256x256
+            clean_image = Image.open(clean_path).convert("RGB").resize((256, 256), Image.LANCZOS)
+            noisy_image = Image.open(noisy_path).convert("RGB").resize((256, 256), Image.LANCZOS)
+
+            clean_np = np.array(clean_image).astype(np.float32)
+            noisy_np = np.array(noisy_image).astype(np.float32)
+
+            if self.normalize:
+                clean_np /= 255.0
+                noisy_np /= 255.0
+
+            clean_tensor = torch.from_numpy(clean_np).permute(2, 0, 1)
+            noisy_tensor = torch.from_numpy(noisy_np).permute(2, 0, 1)
+
+            if self.tanfi:
+                clean_tensor = tan_fi(clean_tensor)
+
+            self.image_pairs.append((noisy_tensor, clean_tensor))
+
+    def __len__(self):
+        return len(self.image_pairs)
+
+    def __getitem__(self, idx):
+        return self.image_pairs[idx]
+
+    def visualize(self, idx):
+        import matplotlib.pyplot as plt
+
+        noisy_crop, clean_crop = self.image_pairs[idx]
+
+        noisy_image = noisy_crop.permute(1, 2, 0).numpy()
+        clean_image = clean_crop.permute(1, 2, 0).numpy()
+
+        if self.normalize:
+            noisy_image = (noisy_image * 255).astype(np.uint8)
+            clean_image = (clean_image * 255).astype(np.uint8)
+
+        fig, axes = plt.subplots(1, 2, figsize=(10, 5))
+        axes[0].imshow(clean_image)
+        axes[0].set_title("Clean Image (256x256)")
+        axes[0].axis("off")
+
+        axes[1].imshow(noisy_image)
+        axes[1].set_title("Noisy Image (256x256)")
+        axes[1].axis("off")
+
+        plt.show()
