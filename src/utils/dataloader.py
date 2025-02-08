@@ -1185,6 +1185,7 @@ class rain13k(Dataset):
 
         plt.show()
 
+# ----> RESIZE IMAGE TO 256 256 ( 800*800 OG )
 
 class uiebd_dataset(Dataset):
     def __init__(self, root_dir, noise_level=25, crop_size=256, num_crops=32, normalize=True, tanfi=True,augmentation=None):
@@ -1218,7 +1219,7 @@ class uiebd_dataset(Dataset):
 
             h, w, _ = clean_np.shape
             clean_crop=Image.resize(clean_np,(256,256))
-            noisy_crop=Image.resize(clean_np,(256,256))
+            noisy_crop=Image.resize(noisy_np,(256,256))
 
             clean_crop = torch.from_numpy(clean_crop).permute(2, 0, 1)
             noisy_crop = torch.from_numpy(noisy_crop).permute(2, 0, 1)
