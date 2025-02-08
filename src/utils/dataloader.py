@@ -1218,17 +1218,20 @@ class uiebd_dataset(Dataset):
                 noisy_np /= 255.0
 
             h, w, _ = clean_np.shape
-            clean_crop=clean_np.resize((128,128))
-            noisy_crop=noisy_np.resize((128,128))
+            for _ in range(self.num_crops):
+                top = random.randint(0, h - self.crop_size)
+                left = random.randint(0, w - self.crop_size)
 
-            clean_crop = torch.from_numpy(clean_crop).permute(2, 0, 1)
-            noisy_crop = torch.from_numpy(noisy_crop).permute(2, 0, 1)
+                clean_crop = clean_np[top:top + self.crop_size, left:left + self.crop_size]
+                noisy_crop = noisy_np[top:top + self.crop_size, left:left + self.crop_size]
 
-            if self.tanfi:
-                clean_crop = tan_fi(clean_crop)
+                clean_crop = torch.from_numpy(clean_crop).permute(2, 0, 1)
+                noisy_crop = torch.from_numpy(noisy_crop).permute(2, 0, 1)
 
-            self.image_pairs.append((noisy_crop, clean_crop))
+                if self.tanfi:
+                    clean_crop = tan_fi(clean_crop)
 
+                self.image_pairs.append((noisy_crop, clean_crop))
     def __len__(self):
         # return 50
         return len(self.image_pairs)
