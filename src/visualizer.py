@@ -90,7 +90,7 @@ def get_statistics(noise, clean, output, idx, suffix='',n2n = False, wb=True):
     
     return stats
 
-def main_vis(test_dir, use_wandb=True, noise_level=25, crop_size=256, num_crops=32):
+def main_vis(test_dir, use_wandb=True, noise_level=25, crop_size=128, num_crops=32):
     """Main visualization function."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
@@ -160,4 +160,4 @@ def main_vis(test_dir, use_wandb=True, noise_level=25, crop_size=256, num_crops=
 
 
 if __name__ == '__main__':
-    main_vis(test_dir='/path/to/CBSD68/dataset')
+    main_vis('hello')
