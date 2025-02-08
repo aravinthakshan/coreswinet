@@ -103,7 +103,7 @@ def main_vis(test_dir, use_wandb=True, noise_level=25, crop_size=128, num_crops=
         })
     
     main_model = load_models(
-    './main_model/best_model.pth',  
+    '/kaggle/input/underwater-image/best_model.pth',  
     device
 )
 
