@@ -1218,8 +1218,8 @@ class uiebd_dataset(Dataset):
                 noisy_np /= 255.0
 
             h, w, _ = clean_np.shape
-            clean_crop=Image.resize(clean_np,(256,256))
-            noisy_crop=Image.resize(noisy_np,(256,256))
+            clean_crop=clean_np.resize((128,128))
+            noisy_crop=noisy_np.resize((128,128))
 
             clean_crop = torch.from_numpy(clean_crop).permute(2, 0, 1)
             noisy_crop = torch.from_numpy(noisy_crop).permute(2, 0, 1)
