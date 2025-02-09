@@ -28,15 +28,9 @@ def main(args):
             }
         )
     
-    # test_model(config)
     train_model(config)
-    
-    
-    
-    
-    
-    
-    
+    test_model(config)
+
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
