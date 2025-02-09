@@ -166,7 +166,7 @@ def train(
             max_psnr = 0
             max_ssim = 0
         else:
-            model.bypass = True
+            model.bypass = False
             
         with tqdm(val_loader, desc="Validation Progress") as loader:
             psnr_val, ssim_val = 0, 0
