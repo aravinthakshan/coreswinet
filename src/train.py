@@ -28,7 +28,7 @@ def main(args):
             }
         )
     
-    test_model(config)
+    # test_model(config)
     train_model(config)
     
     
