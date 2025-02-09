@@ -13,7 +13,6 @@ from tqdm import tqdm
 from utils.misc import get_metrics
 from visualizer import load_models, get_metrics, get_statistics
 import wandb 
-
 def un_tan_fi(data):
     d = data.clone()
     d += 1
@@ -204,7 +203,10 @@ def test_model(config):
         config['noise_level'],
         config['test_dataset']
     )
-    
+
+if __name__ == '__main__': 
+    from train import config
+    test_model(config)
     
 # def preprocess_image(img_path, device):
 #     # Open the image and convert it to RGB
