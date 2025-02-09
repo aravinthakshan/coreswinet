@@ -128,7 +128,7 @@ def train(
                     loss = mse_loss + 0.01 * contrastive_loss + 0.1 * psnr_loss 
 
                 else:
-                    loss = 1000 * mse_loss + 10000*psnr_loss
+                    loss = 100*psnr_loss
                 
                 loss.backward()
                 optimizer.step()
