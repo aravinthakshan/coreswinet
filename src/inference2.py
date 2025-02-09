@@ -196,17 +196,16 @@ def test(
 
 def test_model(config):
     test(
-        config['batch_size'],
-        config['test_dir'],
-        config['wandb'],
-        config['device'], 
-        config['noise_level'],
-        config['test_dataset']
+        batch_size=16,
+        test_dir='/kaggle/input/cbsd68/CBSD68',
+        wandb=True,
+        device=True, 
+        noise_level=25,
+        test_dataset='CBSD68'
     )
 
 if __name__ == '__main__': 
-    from train import config
-    test_model(config)
+    test_model()
     
 # def preprocess_image(img_path, device):
 #     # Open the image and convert it to RGB
