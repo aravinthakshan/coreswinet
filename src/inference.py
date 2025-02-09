@@ -92,10 +92,9 @@ def test_single_configuration(
         for noise, clean in loader:
             noise, clean = noise.to(device), clean.to(device)
 
-            # clean = un_tan_fi(clean) ## ---> remove this later
             
             with torch.no_grad():
-                output_n2n = un_tan_fi(un_tan_fi(clean))
+                output_n2n = un_tan_fi(clean)
                 output_main, _, _ = main_model(noise, output_n2n)
             
             psnr_main, ssim_main = get_metrics(clean, output_main, psnr_metric, ssim_metric)
