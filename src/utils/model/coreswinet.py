@@ -5,7 +5,7 @@ import segmentation_models_pytorch as smp
 from torchsummary import summary
 from utils.model.archs.SwinBlocks import SwinTransformerBlock
 from utils.model.archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
-from utils.model.archs.ZSN2N import N2NNetwork
+# from utils.model.archs.ZSN2N import N2NNetwork
 # from archs.SwinBlocks import SwinTransformerBlock
 # from archs.AttentionModules import SimpleChannelAttention, SqueezeExcitationBlock
     
