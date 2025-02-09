@@ -1,9 +1,9 @@
 import wandb
 from torch.utils.data import DataLoader
-from utils.misc import get_metrics, visualize_epoch, un_tan_fi
+from utils.misc import get_metrics,  un_tan_fi
 from utils.model.coreswinet import Model
 # from utils.model.newmodel import Model
-from utils.dataloader import CBSD68Dataset, Waterloo,DIV2K,BSD400,SIDD,get_training_augmentation
+from utils.dataloader import Waterloo,DIV2K,BSD400,SIDD,get_training_augmentation
 from tqdm import tqdm
 import torch
 import torch.nn as nn
@@ -11,7 +11,7 @@ import torchmetrics
 import torchmetrics.image
 from visualizer import main_vis
 from utils.soap_optimizer import SOAP
-from utils.loss import ContrastiveLoss, TextureLoss, PSNRLoss
+from utils.loss import ContrastiveLoss, PSNRLoss
 import os 
 
 def train(
