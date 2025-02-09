@@ -112,8 +112,8 @@ def test_single_configuration(
     return avg_psnr, avg_ssim
 
 def test(
-    batch_size,
-    test_dir,
+    batch_size=16,
+    test_dir='/kaggle/input/cbsd68/CBSD68',
     use_wandb=True,
     device='cuda',
     crop_size=256,
@@ -195,14 +195,7 @@ def test(
     return all_results
 
 def test_model():
-    test(
-        batch_size=16,
-        test_dir='/kaggle/input/cbsd68/CBSD68',
-        wandb=True,
-        device=True, 
-        noise_level=25,
-        test_dataset='CBSD68'
-    )
+    test()
 
 if __name__ == '__main__': 
     test_model()
