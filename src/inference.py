@@ -6,7 +6,7 @@ from PIL import Image
 import matplotlib.pyplot as plt
 import os
 import numpy as np
-from utils.dataloader import CBSD68Dataset,McMasterDataset,kodak, SICEGradTest, get_sicevalidation_augmentation
+from utils.dataloader import CBSD68Dataset,McMasterDataset,kodak
 from torch.utils.data import DataLoader, Subset
 import torchmetrics
 from tqdm import tqdm
@@ -78,12 +78,6 @@ def test(
             num_crops=34,
             normalize=True,
             tanfi=True 
-        )
-
-    elif test_dataset=='grad':
-        dataset = SICEGradTest(
-            root_dir='/kaggle/input/sice-grad-and-sice-mix/SICEGM',
-            augmentation=get_sicevalidation_augmentation()
         )
 
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
