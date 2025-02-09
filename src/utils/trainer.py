@@ -102,7 +102,7 @@ def train(
             model.bypass = True
             print(f"\nEpoch {epoch + 1}: Enabling encoder bypass and disabling contrastive loss")
         else:
-            model.bypass = True
+            model.bypass = False
 
         model.train()
         total_loss = []
