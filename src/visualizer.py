@@ -3,7 +3,7 @@ import torch
 import numpy as np
 import wandb 
 import torchmetrics.image
-from utils.dataloader import CBSD68Dataset,rain13k
+from utils.dataloader import CBSD68Dataset
 from torch.utils.data import DataLoader
 from utils.model.coreswinet import Model  
 from utils.model.archs.ZSN2N import N2NNetwork
@@ -112,7 +112,7 @@ def main_vis(test_dir, use_wandb=True, noise_level=25, crop_size=256, num_crops=
     main_model.bypass = True 
     print("Main Model Bypass ! ")
     
-    dataset = rain13k(
+    dataset = CBSD68Dataset(
         root_dir='/kaggle/input/cbsd68/CBSD68', 
         noise_level=25, 
         crop_size=crop_size, 
