@@ -92,10 +92,9 @@ def test_single_configuration(
         for noise, clean in loader:
             noise, clean = noise.to(device), clean.to(device)
 
-            # clean = un_tan_fi(clean) ## ---> remove this later
             
             with torch.no_grad():
-                output_n2n = un_tan_fi(un_tan_fi(clean))
+                output_n2n = un_tan_fi(clean)
                 output_main, _, _ = main_model(noise, output_n2n)
             
             psnr_main, ssim_main = get_metrics(clean, output_main, psnr_metric, ssim_metric)
@@ -174,8 +173,8 @@ def test(
             # Log to wandb if enabled
             if use_wandb:
                 wandb.log({
-                    f"{dataset_name}_noise_{noise_level}_psnr": avg_psnr,
-                    f"{dataset_name}_noise_{noise_level}_ssim": avg_ssim
+                    f"{dataset_name}noise{noise_level}_psnr": avg_psnr,
+                    f"{dataset_name}noise{noise_level}_ssim": avg_ssim
                 })
         
         all_results[dataset_name] = dataset_results
@@ -197,7 +196,7 @@ def test(
 def test_model():
     test()
 
-if __name__ == '__main__': 
+if _name_ == '_main_': 
     test_model()
     
 # def preprocess_image(img_path, device):
@@ -268,7 +267,7 @@ if __name__ == '__main__':
 #     print(f"Output saved at {output_file}")
 
 
-# if __name__ == '__main__':
+# if _name_ == '_main_':
 #     parser = argparse.ArgumentParser()
 #     parser.add_argument('--weights_path', type=str, required=True, help="Path to the model weights")
 #     parser.add_argument('--train_dir', type=str, required=True, help="Path to the input image")
