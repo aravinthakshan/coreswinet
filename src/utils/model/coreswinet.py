@@ -145,36 +145,6 @@ from utils.model.archs.ZSN2N import N2NNetwork
 #         return output
 
 
-# if __name__ == "__main__":
-#     # Set the device
-#     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    
-#     # Test both modes
-#     model_normal = Model(in_channels=3).to(device)
-#     model_bypass = Model(in_channels=3).to(device)
-    
-#     batch_size = 2
-#     dummy_input = torch.randn(batch_size, 3, 256, 256).to(device)
-#     dummy_n2n = torch.randn(batch_size, 3, 256, 256).to(device)
-
-#     # Print model summary using torchsummary for two inputs
-#     print("\nModel Summary (Normal Mode):")
-#     summary(model_normal, input_size=[(3, 256, 256), (3, 256, 256)], device=device)
-
-#     print("\nModel Summary (Bypass Mode):")
-#     summary(model_bypass, input_size=[(3, 256, 256), (3, 256, 256)], device=device)
-
-#     output_normal = model_normal(dummy_input, dummy_n2n)
-#     output_bypass = model_bypass(dummy_input, dummy_n2n)
-
-#     if isinstance(output_normal, tuple):
-#         print(f"Normal mode output shape: {output_normal[0].shape}")
-#         print(f"Normal mode contrastive feature shapes: {output_normal[1].shape}, {output_normal[2].shape}")
-    
-#     if isinstance(output_bypass, tuple):
-#         print(f"Bypass mode output shape: {output_bypass[0].shape}")
-#         print(f"Bypass mode contrastive feature shapes: {output_bypass[1].shape}, {output_bypass[2].shape}")
-
 
 class Model(nn.Module):
     def __init__(self, in_channels=3, contrastive=True, bypass=False):

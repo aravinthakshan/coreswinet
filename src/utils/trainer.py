@@ -52,7 +52,6 @@ def train(
     
     print(f"Images per epoch Train: {len(train_loader) * train_loader.batch_size}")
     print(f"Images per epoch Val: {len(val_loader) * val_loader.batch_size}")
-    # Train N2N model
 
     # Initialize main model with bypass parameter
     model = Model(contrastive=True, bypass=False).to(device)
