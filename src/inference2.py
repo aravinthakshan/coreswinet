@@ -194,7 +194,7 @@ def test(
     
     return all_results
 
-def test_model(config):
+def test_model():
     test(
         batch_size=16,
         test_dir='/kaggle/input/cbsd68/CBSD68',
