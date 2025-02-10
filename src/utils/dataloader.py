@@ -1366,9 +1366,9 @@ class SICETrainDataset(BaseDataset):
             input_image, label_image = self.random_crop(input_image, label_image)
         
         # Apply augmentations
-        if self.augmentation:
-            augmented = self.augmentation(image1=label_image, image=input_image)
-            label_image, input_image = augmented['image1'], augmented['image']
+        # if self.augmentation:
+        #     augmented = self.augmentation(image1=label_image, image=input_image)
+        #     label_image, input_image = augmented['image1'], augmented['image']
         
         # Normalize
         if self.normalize:
