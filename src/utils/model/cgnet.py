@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import sys
 from pathlib import Path
 
-from model.archs.arch_util_new import LayerNorm2d
+from archs.arch_util_new import LayerNorm2d
 from archs.local_arch import Local_Base
 
 class SimpleGate(nn.Module):
