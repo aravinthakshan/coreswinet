@@ -357,7 +357,7 @@ if __name__ == '__main__':
                       enc_blk_nums=enc_blks, dec_blk_nums=dec_blks,GCE_CONVS_nums=GCE_CONVS_nums)
 
 
-    inp_shape = (3, 512, 512)
+    inp_shape = (1,3, 512, 512)
     # macs, params = get_model_complexity_info(net, inp_shape, verbose=False, print_per_layer_stat=False)
     # print(macs, params)
     net.forward(inp_shape,inp_shape,True)
