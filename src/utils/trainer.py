@@ -54,7 +54,7 @@ def train(
     print(f"Images per epoch Val: {len(val_loader) * val_loader.batch_size}")
     # Train N2N model
     img_channel = 3
-    width = 70
+    width = 20
     enc_blks = [4, 4, 6, 8]
     middle_blk_num = 8
     dec_blks = [2, 2, 2, 4]
