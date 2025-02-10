@@ -14,6 +14,8 @@ from utils.soap_optimizer import SOAP
 from utils.loss import ContrastiveLoss, PSNRLoss
 import os 
 
+os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
+
 def train(
     epochs,
     batch_size,
