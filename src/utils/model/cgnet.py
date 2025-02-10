@@ -192,7 +192,7 @@ class NAFBlock0(nn.Module):
 
 class CascadedGazeNetBigger(nn.Module):
 
-    def __init__(self, img_channel=3, width=16, middle_blk_num=1, enc_blk_nums=[], dec_blk_nums=[], GCE_CONVS_nums=[],contrastive=True):
+    def __init__(self, img_channel=3, width=16, middle_blk_num=1, enc_blk_nums=[], dec_blk_nums=[], GCE_CONVS_nums=[],contrastive=True,bypass=True):
         super().__init__()
         self.constrastive=contrastive
         self.intro = nn.Conv2d(in_channels=img_channel, out_channels=width, kernel_size=3, padding=1, stride=1, groups=1,
@@ -210,6 +210,7 @@ class CascadedGazeNetBigger(nn.Module):
         self.downs = nn.ModuleList()
         self.downs2=nn.ModuleList()
         chan = width
+        self.bypass=bypass
 
         self.contrastive = contrastive
         # if contrastive:
@@ -279,7 +280,7 @@ class CascadedGazeNetBigger(nn.Module):
 
         self.padder_size = 2 ** len(self.encoders)
 
-    def forward(self, inp,gt,bypass):
+    def forward(self, inp,gt):
         B, C, H, W = inp.shape
         inp = self.check_image_size(inp)
 

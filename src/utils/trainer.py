@@ -1,7 +1,7 @@
 import wandb
 from torch.utils.data import DataLoader
 from utils.misc import get_metrics, visualize_epoch, un_tan_fi
-from utils.model.coreswinet import Model
+from utils.model.cgnet import CascadedGazeNetBigger
 # from utils.model.newmodel import Model
 from utils.dataloader import CBSD68Dataset, Waterloo,DIV2K,BSD400,SIDD,get_training_augmentation
 from tqdm import tqdm
@@ -53,9 +53,15 @@ def train(
     print(f"Images per epoch Train: {len(train_loader) * train_loader.batch_size}")
     print(f"Images per epoch Val: {len(val_loader) * val_loader.batch_size}")
     # Train N2N model
-
+    img_channel = 3
+    width = 70
+    enc_blks = [4, 4, 6, 8]
+    middle_blk_num = 8
+    dec_blks = [2, 2, 2, 4]
+    GCE_CONVS_nums = [4,4,3,3]
     # Initialize main model with bypass parameter
-    model = Model(contrastive=True, bypass=False).to(device)
+    model = CascadedGazeNetBigger(img_channel=img_channel,width=width, middle_blk_num=middle_blk_num,
+                      enc_blk_nums=enc_blks, dec_blk_nums=dec_blks,GCE_CONVS_nums=GCE_CONVS_nums,contrastive=True,bypass=False).to(device)
     
     # Optimizer
     optimizer = SOAP(
