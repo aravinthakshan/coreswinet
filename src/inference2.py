@@ -133,7 +133,7 @@ def test(
     
     # Load model
     main_model = load_models(
-        './main_model/final_model.pth',
+        '/kaggle/input/10000psnr/best_model (1).pth',
         device
     )
     main_model.to(device).eval()
@@ -196,7 +196,7 @@ def test(
 def test_model():
     test()
 
-if _name_ == '_main_': 
+if __name__ == '__main__': 
     test_model()
     
 # def preprocess_image(img_path, device):
