@@ -8,7 +8,6 @@ from torch.nn import functional as F
 from torch.nn import init as init
 from torch.nn.modules.batchnorm import _BatchNorm
 from torch import Tensor
-from basicsr.utils import get_root_logger
 
 
 @torch.no_grad()
