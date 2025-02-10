@@ -4,8 +4,8 @@ import torch.nn.functional as F
 import sys
 from pathlib import Path
 
-from utils.model.archs.arch_util_new import LayerNorm2d
-from utils.model.archs.local_arch import Local_Base
+from model.archs.arch_util_new import LayerNorm2d
+from archs.local_arch import Local_Base
 
 class SimpleGate(nn.Module):
     def forward(self, x):
