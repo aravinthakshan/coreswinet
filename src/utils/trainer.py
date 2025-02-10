@@ -122,7 +122,7 @@ def train(
             model.bypass = True
             print(f"\nEpoch {epoch + 1}: Enabling encoder bypass and disabling contrastive loss")
         else:
-            model.bypass = False
+            model.bypass = True
 
         model.train()
         total_loss = []
@@ -194,7 +194,7 @@ def train(
             max_psnr = 0
             max_ssim = 0
         else:
-            model.bypass = False
+            model.bypass = True
             
         with tqdm(val_loader, desc="Validation Progress") as loader:
             psnr_val, ssim_val = 0, 0
