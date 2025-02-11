@@ -288,7 +288,6 @@ class CascadedGazeNetBigger(nn.Module):
         x_gt=self.intro2(gt)
         encs = []
         encs2=[]
-        self.bypass=bypass
         for encoder, down in zip(self.encoders, self.downs):
             x = encoder(x)
             encs.append(x)
