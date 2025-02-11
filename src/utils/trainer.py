@@ -135,13 +135,6 @@ def train(
             for itr, batch_data in enumerate(loader):
                 noise, clean = [x.to(device) for x in batch_data]
                 
-                # if use_n2n:
-                #     with torch.no_grad():
-                #         n2n_output = n2n_model.denoise(noise)
-                # else:
-                #     n2n_output = noise
-
-                
                 n2n_output = un_tan_fi(clean)# feeding ground truth 
                 optimizer.zero_grad()
                 
