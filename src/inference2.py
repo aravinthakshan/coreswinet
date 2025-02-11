@@ -125,11 +125,11 @@ def test(
     print(f"Using device: {device}")
     
     # Initialize wandb if requested
-    if use_wandb:
-        wandb.init(project="DeFInet", config={
-            "crop_size": crop_size,
-            "num_crops": 34
-        })
+    # if use_wandb:
+    #     wandb.init(project="DeFInet", config={
+    #         "crop_size": crop_size,
+    #         "num_crops": 34
+    #     })
     
     # Load model
     main_model = load_models(
@@ -171,11 +171,11 @@ def test(
             }
             
             # Log to wandb if enabled
-            if use_wandb:
-                wandb.log({
-                    f"{dataset_name}_noise_{noise_level}_psnr": avg_psnr,
-                    f"{dataset_name}_noise_{noise_level}_ssim": avg_ssim
-                })
+            # if use_wandb:
+            #     wandb.log({
+            #         f"{dataset_name}_noise_{noise_level}_psnr": avg_psnr,
+            #         f"{dataset_name}_noise_{noise_level}_ssim": avg_ssim
+            #     })
         
         all_results[dataset_name] = dataset_results
     
@@ -188,8 +188,8 @@ def test(
             print(f"  PSNR: {metrics['psnr']:.4f}")
             print(f"  SSIM: {metrics['ssim']:.4f}")
     
-    if use_wandb:
-        wandb.finish()
+    # if use_wandb:
+    #     wandb.finish()
     
     return all_results
 
