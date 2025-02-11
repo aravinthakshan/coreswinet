@@ -13,7 +13,6 @@ from tqdm import tqdm
 from utils.misc import get_metrics
 from visualizer import load_models, get_metrics, get_statistics
 import wandb 
-
 def un_tan_fi(data):
     d = data.clone()
     d += 1
@@ -93,10 +92,9 @@ def test_single_configuration(
         for noise, clean in loader:
             noise, clean = noise.to(device), clean.to(device)
 
-            # clean = un_tan_fi(clean) ## ---> remove this later
             
             with torch.no_grad():
-                output_n2n = un_tan_fi(un_tan_fi(clean))
+                output_n2n = un_tan_fi(clean)
                 output_main, _, _ = main_model(noise, output_n2n)
             
             psnr_main, ssim_main = get_metrics(clean, output_main, psnr_metric, ssim_metric)
@@ -113,8 +111,8 @@ def test_single_configuration(
     return avg_psnr, avg_ssim
 
 def test(
-    batch_size,
-    test_dir,
+    batch_size=16,
+    test_dir='/kaggle/input/cbsd68/CBSD68',
     use_wandb=True,
     device='cuda',
     crop_size=256,
@@ -135,7 +133,7 @@ def test(
     
     # Load model
     main_model = load_models(
-        '/kaggle/input/somethingaravinthakshan/pytorch/default/1/final_model.pth',
+        '/kaggle/input/4000mse/best_model (4).pth',
         device
     )
     main_model.to(device).eval()
@@ -195,16 +193,11 @@ def test(
     
     return all_results
 
-def test_model(config):
-    test(
-        config['batch_size'],
-        config['test_dir'],
-        config['wandb'],
-        config['device'], 
-        config['noise_level'],
-        config['test_dataset']
-    )
-    
+def test_model():
+    test()
+
+if __name__ == '__main__': 
+    test_model()
     
 # def preprocess_image(img_path, device):
 #     # Open the image and convert it to RGB
