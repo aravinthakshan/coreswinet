@@ -154,7 +154,7 @@ def train(
                 # Only apply contrastive loss before bypass_epoch
                 if epoch < bypass_epoch:
                     contrastive_loss = contrastive_loss_fn(f1, f2)
-                    loss =  100*contrastive_loss ##----------->NOTE: HAS BEEN CHANGED
+                    loss =  contrastive_loss ##----------->NOTE: HAS BEEN CHANGED
                 else:
                     loss =  mse_loss +0.5*psnr_loss
                 
