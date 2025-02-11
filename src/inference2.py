@@ -274,9 +274,9 @@ def test_model(config):
 #     print(f"Output saved at {output_file}")
 
 
-# if __name__ == '__main__':
-#     parser = argparse.ArgumentParser()
-#     parser.add_argument('--weights_path', type=str, required=True, help="Path to the model weights")
-#     parser.add_argument('--train_dir', type=str, required=True, help="Path to the input image")
-#     arguments = parser.parse_args()
-#     main(arguments)
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--weights_path', type=str, required=True, help="Path to the model weights")
+    parser.add_argument('--train_dir', type=str, required=True, help="Path to the input image")
+    arguments = parser.parse_args()
+    test_model()
