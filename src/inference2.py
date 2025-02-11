@@ -135,7 +135,7 @@ def test(
     
     # Load model
     main_model = load_models(
-        '/kaggle/input/4000mse/best_model (4).pth',
+        '/kaggle/input/somethingaravinthakshan/pytorch/default/1/final_model.pth',
         device
     )
     main_model.to(device).eval()
@@ -274,9 +274,9 @@ def test_model(config):
 #     print(f"Output saved at {output_file}")
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--weights_path', type=str, required=True, help="Path to the model weights")
-    parser.add_argument('--train_dir', type=str, required=True, help="Path to the input image")
-    arguments = parser.parse_args()
-    test_model()
+# if __name__ == '__main__':
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument('--weights_path', type=str, required=True, help="Path to the model weights")
+#     parser.add_argument('--train_dir', type=str, required=True, help="Path to the input image")
+#     arguments = parser.parse_args()
+#     main(arguments)
