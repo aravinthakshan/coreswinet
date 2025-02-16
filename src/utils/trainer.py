@@ -90,7 +90,7 @@ def train(
     
     # Loss functions
     mse_criterion = nn.MSELoss()
-    contrastive_loss_fn = ContrastiveLoss(batch_size=batch_size, temperature=contrastive_temperature)
+    # contrastive_loss_fn = ContrastiveLoss(batch_size=batch_size, temperature=contrastive_temperature)
     psnr_loss_func = PSNRLoss()
     # Metrics
     psnr_metric = torchmetrics.image.PeakSignalNoiseRatio().to(device)
@@ -139,18 +139,15 @@ def train(
                 optimizer.zero_grad()
                 
                 # Forward pass
-                output, f1, f2 = model(noise)
+                output = model(noise)
                 
                  # Calculate losses
                 mse_loss = mse_criterion(output, clean)
                 psnr_loss = psnr_loss_func(output,clean)
                 # Only apply contrastive loss before bypass_epoch
 
-                if epoch < bypass_epoch:
-                    # contrastive_loss = contrastive_loss_fn(f1, f2)
-                    loss =  1000* mse_loss + 0.1 * psnr_loss ##----------->NOTE: HAS BEEN CHANGED
-                else:
-                    loss = 4000 * mse_loss +0.5*psnr_loss
+                
+                loss = 4000 * mse_loss +0.5*psnr_loss
                 
                 loss.backward()
                 optimizer.step()
