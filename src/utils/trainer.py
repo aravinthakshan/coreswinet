@@ -198,7 +198,7 @@ def train(
                     # else:
                     #     n2n_output = noise
                     n2n_output = un_tan_fi(clean) ##note
-                    output, _, _ = model(noise)
+                    output = model(noise)
                     psnr_val_itr, ssim_val_itr = get_metrics(clean, output, psnr_metric, ssim_metric)
                     psnr_val += psnr_val_itr
                     ssim_val += ssim_val_itr
