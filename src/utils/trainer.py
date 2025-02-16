@@ -139,7 +139,7 @@ def train(
                 optimizer.zero_grad()
                 
                 # Forward pass
-                output, f1, f2 = model(noise, n2n_output)
+                output, f1, f2 = model(noise)
                 
                  # Calculate losses
                 mse_loss = mse_criterion(output, clean)
@@ -201,7 +201,7 @@ def train(
                     # else:
                     #     n2n_output = noise
                     n2n_output = un_tan_fi(clean) ##note
-                    output, _, _ = model(noise, n2n_output)
+                    output, _, _ = model(noise)
                     psnr_val_itr, ssim_val_itr = get_metrics(clean, output, psnr_metric, ssim_metric)
                     psnr_val += psnr_val_itr
                     ssim_val += ssim_val_itr
