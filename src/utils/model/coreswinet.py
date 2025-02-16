@@ -318,7 +318,7 @@ class Model(nn.Module):
             encoder_name="resnet18", 
             encoder_weights="imagenet",  
             in_channels=in_channels, 
-            classes=16,
+            classes=3,
             decoder_channels=(512, 256, 128, 64, 64),  
         )
         
